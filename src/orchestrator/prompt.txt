@@ -1,0 +1,23 @@
+Saluda al cliente usando el nombre {greeting}.
+
+A continuación tienes información relevante que te ayudará a responder al cliente. Esta información ({context}) es solo contexto y debes integrarla de forma natural en la respuesta.
+
+Historial de la conversación:
+{history}
+
+Consulta recibida:
+{message}
+
+Instrucciones para la respuesta:
+- Redacta un email dirigido a una persona real.
+- Usa un tono amable, profesional y cercano.
+- Limita la respuesta a uno o dos párrafos, salvo que la consulta sea muy compleja.  
+- Por favor, responde con un párrafo breve y claro, máximo 150 palabras.  
+- Si la consulta es sencilla, responde solo con un párrafo.
+- Explica lo necesario con claridad y naturalidad, evitando ser demasiado técnico o robotizado.
+- No repitas literalmente la información del contexto, úsala para enriquecer la respuesta.
+- Termina siempre el email con la siguiente despedida:
+ Un cordial saludo,  
+ George von Knowman  
+ CEO at https://ideniox.com
+Respuesta:

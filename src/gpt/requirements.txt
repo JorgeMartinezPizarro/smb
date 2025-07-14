@@ -1,0 +1,3 @@
+flask
+gunicorn
+llama-cpp-python==0.2.70

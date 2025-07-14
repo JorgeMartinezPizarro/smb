@@ -1,0 +1,44 @@
+services:
+  gpt:
+    build: ./src/gpt
+    volumes:
+      - ./cache/models:/app/models
+      - ./cache/cache:/root/.cache/llama_cpp
+    environment:
+      - MODEL_PATH=/app/models/mistral-7b-instruct.Q4_K_M.gguf
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+  mailer:
+    build: ./src/mailer
+    depends_on:
+      - gpt
+    environment:
+      - EMAIL_USER=${MAIL_USER}
+      - EMAIL_PASS=${MAIL_PASS}
+      - IMAP_SERVER=${MAIL_HOST}
+      - ORCHESTRATOR_URL=http://orchestrator:5000/process_email
+  db:
+    build: ./src/db
+    volumes:
+      - ./cache/sqlite:/data
+
+  orchestrator:
+    build: ./src/orchestrator
+    depends_on:
+      - gpt
+    environment:
+      - DB_PATH=/data/db.sqlite
+      - GPT_URL=http://gpt:5000/gpt
+      - BOT_EMAIL=${MAIL_USER}
+      - BOT_PASS=${MAIL_PASS}
+      - SMTP_SERVER=${MAIL_HOST}
+    volumes:
+      - ./cache/sqlite:/data
+      - ./cache/vector_db:/app/vector_db
+
+volumes:
+  sqlite_data:
