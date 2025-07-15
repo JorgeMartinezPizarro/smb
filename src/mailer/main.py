@@ -51,7 +51,7 @@ def main_loop():
 	log("Iniciando bucle de revisión de correos.")
 	while True:
 		check_inbox()
-		time.sleep(6)
+		time.sleep(1)
 
 if __name__ == "__main__":
 	log("Mailer iniciado correctamente.")

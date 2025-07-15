@@ -100,6 +100,7 @@ def ask_gpt_with_retry(prompt, retries=10, delay=10):
     raise Exception("No se pudo conectar con GPT después de varios intentos")
 
 def send_email(to, subject, body):
+    body = body.replace('\\n', '\n')  # <-- aquí la corrección
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = BOT_EMAIL
@@ -141,11 +142,6 @@ def clean_gpt_response(text):
         # Si no hay '---', devuelve el texto tal cual
         return text.strip()
     
-def truncate_text(text, max_length):
-    if len(text) <= max_length:
-        return text
-    return text[:max_length-3] + "..."
-
 from retriever import FAQRetriever
 
 # Carga global del retriever, solo una vez
@@ -180,19 +176,10 @@ def process_email(sender, subject, body):
     with open(PROMPT_FILE, encoding="utf-8") as f:
         template = f.read()
 
-    # Añade la variable {context} en tu plantilla para inyectar el FAQ
-    prompt_pre = template.replace("{greeting}", name).replace("{sender}", sender)
-    # Reservo espacio para {history}, {message} y {context}
-    reserved = len(prompt_pre) - len("{history}") - len("{message}") - len("{context}")
-
-    max_per_field = max((MAX_PROMPT_LENGTH - reserved) // 3, 50)
-
-    body_short = body
-    
     prompt = template.replace("{greeting}", name) \
                      .replace("{sender}", sender) \
                      .replace("{history}", history_text) \
-                     .replace("{message}", body_short) \
+                     .replace("{message}", body) \
                      .replace("{context}", context_text)
 
     logging.info(f"Prompt generado para GPT ({len(prompt)} chars):\n{prompt}")
@@ -201,6 +188,7 @@ def process_email(sender, subject, body):
         answer = ask_gpt_with_retry(prompt)
         answer = clean_redundancy(answer)
         answer = clean_gpt_response(answer)
+        
         logging.info(f"Respuesta recibida de GPT:\n{answer}")
     except Exception as e:
         logging.error(f"Error llamando a GPT: {e}")

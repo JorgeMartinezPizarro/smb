@@ -22,16 +22,16 @@ A lightweight AI-powered email support bot.
 
 ## 🚀 Usage
 
-1. Clone the repository:
+- Clone the repository:
 
 ```bash
 git clone https://github.com/JorgeMartinezPizarro/smb
 cd smb
 ```
 
-2. Configure your environment by editing the .env file.
+- Configure your environment by editing the .env file.
 
-3. Run the app:
+- Run the app:
 
 ```bash
 make up
