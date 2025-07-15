@@ -1,41 +1,38 @@
-# ABSTRACT
+# Support Mail Bot (SMB) 📬🤖
 
-SUPPORT MAIL BOT (SMB)
+A lightweight AI-powered email support bot.
 
-A tool that combines:
+## 🔹 Abstract
 
-# STRUCTURE
+**Support Mail Bot (SMB)** is a modular system designed to automate support email responses using AI and historical context.
 
-## DB
+## 🔸 Architecture
 
-Sqlite database for historical data.
-## GPT 
+- **DB**  
+  Uses SQLite to store historical data and past email interactions.
 
-A container with a tokenized mistral model
+- **GPT**  
+  Runs a containerized Mistral model (tokenized) for generating natural language responses.
 
-## MAILER 
+- **Mailer**  
+  A simple Python-based email client to fetch incoming messages.
 
-A simple py mail client to scan new mail
+- **Orchestrator**  
+  Core app that vectorizes incoming mail, fetches context from SQLite, and crafts a response using the GPT model.
 
-## ORQUESTRATOR
+## 🚀 Usage
 
-It sends a response to a given email. It is a simple py app that combines vectorized data with sqlite data to create a response using that and GPT. 
+1. Clone the repository:
 
-# USAGE
-
-First clone the repository
-
-```
+```bash
 git clone https://github.com/JorgeMartinezPizarro/smb
-
+cd smb
 ```
 
-Then, setup your configuration in .env file. 
+2. Configure your environment by editing the .env file.
 
-Finally,
+3. Run the app:
 
-```
+```bash
 make up
 ```
-
-to start the services.
