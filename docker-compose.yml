@@ -6,6 +6,10 @@ services:
       - ./cache/cache:/root/.cache/llama_cpp
     environment:
       - MODEL_PATH=/app/models/mistral-7b-instruct.Q4_K_M.gguf
+      - OMP_NUM_THREADS=10
+      - MKL_NUM_THREADS=10
+      - OPENBLAS_NUM_THREADS=10
+      - NUMEXPR_NUM_THREADS=10
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 20s

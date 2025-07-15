@@ -12,33 +12,33 @@ def create_index(
 ):
 	if not os.path.exists(index_path) or not os.path.exists(chunks_path):
 		print("Generando nuevo índice FAISS desde FAQ...")
-		create_index()
+		
+		FAQ_FILE = Path(faq_file_path)
+		if not FAQ_FILE.exists():
+			raise FileNotFoundError(f"No se encontró el archivo FAQ en: {faq_file_path}")
+
+		with FAQ_FILE.open("r", encoding="utf-8") as f:
+			text = f.read()
+
+		# Trocea en párrafos/chunks
+		chunks = [chunk.strip() for chunk in text.split("\n\n") if len(chunk.strip()) > 30]
+		if not chunks:
+			raise ValueError("El archivo FAQ está vacío o mal formateado.")
+
+		model = SentenceTransformer("all-MiniLM-L6-v2")
+		embeddings = model.encode(chunks, show_progress_bar=True)
+		dimension = embeddings.shape[1]
+
+		# Crea índice FAISS
+		index = faiss.IndexFlatL2(dimension)
+		index.add(embeddings)
+
+		Path("vector_db").mkdir(exist_ok=True)
+
+		faiss.write_index(index, index_path)
+		with open(chunks_path, "wb") as f:
+			pickle.dump(chunks, f)
+
+		print(f"Ingesta completada: {len(chunks)} trozos indexados.")
 	else:
 		print("Índice y chunks ya existen. No se regeneran.")
-	FAQ_FILE = Path(faq_file_path)
-	if not FAQ_FILE.exists():
-		raise FileNotFoundError(f"No se encontró el archivo FAQ en: {faq_file_path}")
-
-	with FAQ_FILE.open("r", encoding="utf-8") as f:
-		text = f.read()
-
-	# Trocea en párrafos/chunks
-	chunks = [chunk.strip() for chunk in text.split("\n\n") if len(chunk.strip()) > 30]
-	if not chunks:
-		raise ValueError("El archivo FAQ está vacío o mal formateado.")
-
-	model = SentenceTransformer("all-MiniLM-L6-v2")
-	embeddings = model.encode(chunks, show_progress_bar=True)
-	dimension = embeddings.shape[1]
-
-	# Crea índice FAISS
-	index = faiss.IndexFlatL2(dimension)
-	index.add(embeddings)
-
-	Path("vector_db").mkdir(exist_ok=True)
-
-	faiss.write_index(index, index_path)
-	with open(chunks_path, "wb") as f:
-		pickle.dump(chunks, f)
-
-	print(f"Ingesta completada: {len(chunks)} trozos indexados.")

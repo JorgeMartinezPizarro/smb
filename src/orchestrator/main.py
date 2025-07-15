@@ -130,8 +130,6 @@ def extract_name_from_message(message):
 
 # --- PROCESAMIENTO DE EMAIL ---
 
-MAX_PROMPT_LENGTH = 5000  # ajusta según tu límite GPT
-
 def clean_gpt_response(text):
     # Busca la línea con solo guiones (---)
     parts = text.split('---', 1)

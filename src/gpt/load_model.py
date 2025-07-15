@@ -77,7 +77,6 @@ def generate_text(prompt):
         response = llm(
             prompt,
             max_tokens=MAX_TOKENS,
-            stop=["</s>", "\nUser:"],
             temperature=0.7,
             echo=False,
         )
