@@ -5,8 +5,14 @@ echo "[ENTRYPOINT] Modo de ejecución: USE_GPU=$USE_GPU"
 
 MODEL_DIR=$(dirname "$MODEL_PATH")
 MODEL_FILE="$MODEL_PATH"
-REPO="TheBloke/OpenHermes-2.5-Mistral-7B-GGUF"
-FILE="openhermes-2.5-mistral-7b.Q8_0.gguf"
+
+if [ "$USE_GPU" = "true" ]; then
+  REPO="TheBloke/OpenHermes-2.5-Mistral-7B-GGUF"
+  FILE="openhermes-2.5-mistral-7b.Q8_0.gguf"
+else
+  REPO="bartowski/Mistral-7B-Instruct-v0.3-GGUF"
+  FILE="Mistral-7B-Instruct-v0.3-Q4_K_M.gguf"
+fi
 
 mkdir -p "$MODEL_DIR"
 
