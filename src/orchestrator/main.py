@@ -8,7 +8,7 @@ app = Flask(__name__)
 # Configuración por variables de entorno
 DB_PATH = os.getenv("DB_PATH", "/data/db.sqlite")
 GPT_URL = os.getenv("GPT_URL", "http://gpt:5000/gpt")
-PROMPT_FILE = "prompt.txt"
+PROMPT_FILE = "assets/prompt.txt"
 SMTP_SERVER = os.getenv("SMTP_SERVER")
 BOT_EMAIL = os.getenv("BOT_EMAIL")
 BOT_PASS = os.getenv("BOT_PASS")

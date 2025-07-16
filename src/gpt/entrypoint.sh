@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+echo "[ENTRYPOINT] Modo de ejecución: USE_GPU=$USE_GPU"
+
 MODEL_DIR=$(dirname "$MODEL_PATH")
 MODEL_FILE="$MODEL_PATH"
 REPO="bartowski/Mistral-7B-Instruct-v0.3-GGUF"

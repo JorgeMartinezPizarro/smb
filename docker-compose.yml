@@ -1,15 +1,40 @@
 services:
-  gpt:
-    build: ./src/gpt
+  gpt-cpu:
+    build:
+      context: ./src/gpt
+      args:
+        USE_GPU: "false"
+    profiles: ["cpu"]
+    environment:
+      - MODEL_PATH=/app/models/mistral-7b-instruct.Q4_K_M.gguf
+      - USE_GPU=false
     volumes:
       - ./cache/models:/app/models
       - ./cache/cache:/root/.cache/llama_cpp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  gpt-gpu:
+    build:
+      context: ./src/gpt
+      args:
+        USE_GPU: "true"
+    profiles: ["gpu"]
     environment:
       - MODEL_PATH=/app/models/mistral-7b-instruct.Q4_K_M.gguf
-      - OMP_NUM_THREADS=10
-      - MKL_NUM_THREADS=10
-      - OPENBLAS_NUM_THREADS=10
-      - NUMEXPR_NUM_THREADS=10
+      - USE_GPU=true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    volumes:
+      - ./cache/models:/app/models
+      - ./cache/cache:/root/.cache/llama_cpp
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 20s
@@ -19,7 +44,7 @@ services:
   mailer:
     build: ./src/mailer
     depends_on:
-      - gpt
+      - ${GPT_SERVICE}
     environment:
       - EMAIL_USER=${MAIL_USER}
       - EMAIL_PASS=${MAIL_PASS}
@@ -33,16 +58,14 @@ services:
   orchestrator:
     build: ./src/orchestrator
     depends_on:
-      - gpt
+      - ${GPT_SERVICE}
     environment:
       - DB_PATH=/data/db.sqlite
-      - GPT_URL=http://gpt:5000/gpt
+      - GPT_URL=http://${GPT_SERVICE}:5000/gpt
       - BOT_EMAIL=${MAIL_USER}
       - BOT_PASS=${MAIL_PASS}
       - SMTP_SERVER=${MAIL_HOST}
     volumes:
       - ./cache/sqlite:/data
       - ./cache/vector_db:/app/vector_db
-
-volumes:
-  sqlite_data:
+      - ./assets/:/app/assets

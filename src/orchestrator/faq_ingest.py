@@ -7,7 +7,7 @@ from pathlib import Path
 from sentence_transformers import SentenceTransformer
 
 def create_index(
-    faq_file_path="data/faq.txt",
+    faq_file_path="assets/faq.txt",
     index_path="vector_db/faiss_index.bin",
     chunks_path="vector_db/chunks.pkl"
 ):
