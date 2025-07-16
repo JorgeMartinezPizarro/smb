@@ -12,8 +12,8 @@ model_lock = threading.Lock()
 llm = None
 
 MODEL_PATH = os.environ.get("MODEL_PATH", "/app/models/mistral-7b-instruct.Q4_K_M.gguf")
-NUM_THREADS = os.environ.get("NUM_THREADS", 4)
-BATCH_SIZE = os.environ.get("BATCH_SIZE", 2048)
+NUM_THREADS = int(os.environ.get("NUM_THREADS", 4))
+BATCH_SIZE = int(os.environ.get("BATCH_SIZE", 2048))
 MAX_PROMPT_LENGTH = 4096
 MAX_TOKENS = 4096
 USE_GPU = os.environ.get("USE_GPU", "false").lower() == "true"
