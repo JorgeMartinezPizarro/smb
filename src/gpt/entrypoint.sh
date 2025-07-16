@@ -18,8 +18,8 @@ from huggingface_hub import hf_hub_download
 hf_hub_download(
   repo_id="$REPO",
   filename="$FILE",
-  cache_dir="$MODEL_DIR",
-  force_filename="$FILE"
+  local_dir="$MODEL_DIR",
+  local_dir_use_symlinks=False
 )
 EOF
   mv "$MODEL_DIR/$FILE" "$MODEL_DIR/$EXPECTED_FILE"
