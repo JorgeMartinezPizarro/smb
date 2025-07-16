@@ -1,4 +1,3 @@
-# Base CUDA toolkit (sin driver, solo herramientas)
 FROM nvidia/cuda:12.2.0-devel-ubuntu22.04
 
 ARG USE_GPU=false
@@ -16,7 +15,6 @@ COPY requirements.txt ./
 RUN pip3 install --upgrade pip
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Para evitar errores linker de CUDA en build, solo usa los stubs:
 ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH
 ENV LIBRARY_PATH=/usr/local/cuda/lib64/stubs:$LIBRARY_PATH
 
@@ -27,8 +25,6 @@ RUN git clone https://github.com/ggerganov/llama.cpp.git /llama.cpp && \
     else \
       cmake .. && make -j$(nproc); \
     fi
-    
-RUN pip3 install --force-reinstall --no-cache-dir /llama.cpp/python
 
 WORKDIR /app
 
