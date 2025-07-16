@@ -164,8 +164,9 @@ def process_email(sender, subject, body):
     else:
         history_text = "Este es el primer mensaje del cliente."
 
-    # Obtén fragmentos relevantes del FAQ (top 3)
-    faq_chunks = retriever.query(body, top_k=3)
+    # Obtén fragmentos relevantes del FAQ (top 5)
+    faq_chunks = retriever.query(body, top_k=6)
+    logging.info(f"FAQs relevantes extraídas: {faq_chunks}")
     context_text = "\n".join(faq_chunks)
     if not context_text.strip():
         context_text = "No hay información adicional disponible del FAQ."

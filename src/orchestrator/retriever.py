@@ -22,10 +22,15 @@ class FAQRetriever:
 		# Carga los textos originales
 		with open(self.chunks_path, "rb") as f:
 			self.chunks = pickle.load(f)
+	@staticmethod
+	def clean_text(text):
+		return ' '.join(text.lower().strip().split())
 
-	def query(self, query_text, top_k=3):
-		query_vec = self.model.encode([query_text])
+	def query(self, query_text, top_k=5):
+		query_vec = self.model.encode([self.clean_text(query_text)])
 		distances, indices = self.index.search(query_vec, top_k)
+		print("Distancias:", distances)
+		print("Indices:", indices)
 		results = []
 		seen = set()
 		for idx in indices[0]:
