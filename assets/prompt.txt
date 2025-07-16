@@ -16,6 +16,8 @@ Detecta el idioma del mensaje recibido.
 
 Responde en el mismo idioma si es español, inglés, alemán, francés o italiano.
 
+Por favor, mantén un rigor gramatical estricto en toda la respuesta. Evita errores comunes, construcciones forzadas o poco naturales, y usa siempre un español correcto y fluido.
+
 Si no reconoces el idioma o es otro distinto, responde en español.
 
 Escribe un email breve (máx. 150 palabras), claro, humano y profesional.
