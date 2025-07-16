@@ -65,6 +65,7 @@ services:
       - BOT_EMAIL=${MAIL_USER}
       - BOT_PASS=${MAIL_PASS}
       - SMTP_SERVER=${MAIL_HOST}
+      - USE_GPU=false
     volumes:
       - ./cache/sqlite:/data
       - ./cache/vector_db:/app/vector_db
