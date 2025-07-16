@@ -1,5 +1,11 @@
-up:
-	docker compose up -d --build
+build:
+	docker compose build --build-arg USE_GPU=false
+
+up: build
+	docker compose up -d
+
+up-gpu: build
+	docker compose up -d --gpus all
 
 down:
 	docker compose down
@@ -8,7 +14,9 @@ logs:
 	docker compose logs -f
 
 restart:
-	docker compose down && docker compose up --build
+	docker compose down
+	docker compose build --build-arg USE_GPU=false
+	docker compose up -d --gpus all
 
 ps:
 	docker compose ps
