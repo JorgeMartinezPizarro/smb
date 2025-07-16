@@ -24,14 +24,18 @@ services:
       args:
         USE_GPU: "true"
     profiles: ["gpu"]
-    environment:
-      - MODEL_PATH=/app/models/mistral-7b-instruct.Q4_K_M.gguf
-      - USE_GPU=true
-    deploy:
+    runtime: nvidia
+    deploy: # (opcional, no necesario en local)
       resources:
         reservations:
           devices:
-            - capabilities: [gpu]
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - MODEL_PATH=/app/models/mistral-7b-instruct.Q4_K_M.gguf
+      - USE_GPU=true
     volumes:
       - ./cache/models:/app/models
       - ./cache/cache:/root/.cache/llama_cpp
