@@ -28,4 +28,4 @@ else
   echo "[ENTRYPOINT] Modelo ya existe, saltando descarga."
 fi
 
-exec gunicorn --workers=1 --threads=10 --bind 0.0.0.0:5000 load_model:app
+exec gunicorn --workers=1 --threads=1 --timeout=300 --bind 0.0.0.0:5000 load_model:app
