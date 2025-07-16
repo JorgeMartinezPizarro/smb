@@ -1,7 +1,5 @@
-export COMPOSE_BAKE=true
-
 up:
-	docker compose up --build -d
+	docker compose up -d --build
 
 down:
 	docker compose down

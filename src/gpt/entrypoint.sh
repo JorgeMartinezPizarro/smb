@@ -5,13 +5,12 @@ echo "[ENTRYPOINT] Modo de ejecución: USE_GPU=$USE_GPU"
 
 MODEL_DIR=$(dirname "$MODEL_PATH")
 MODEL_FILE="$MODEL_PATH"
-REPO="bartowski/Mistral-7B-Instruct-v0.3-GGUF"
-FILE="Mistral-7B-Instruct-v0.3-Q4_K_M.gguf"
-EXPECTED_FILE="mistral-7b-instruct.Q4_K_M.gguf"
+REPO="TheBloke/OpenHermes-2.5-Mistral-7B-GGUF"
+FILE="openhermes-2.5-mistral-7b.Q8_0.gguf"
 
 mkdir -p "$MODEL_DIR"
 
-if [ ! -f "$MODEL_DIR/$EXPECTED_FILE" ]; then
+if [ ! -f "$MODEL_DIR/$FILE" ]; then
   echo "[ENTRYPOINT] Modelo no encontrado. Descargando $FILE..."
   python3 - <<EOF
 from huggingface_hub import hf_hub_download
@@ -22,8 +21,7 @@ hf_hub_download(
   local_dir_use_symlinks=False
 )
 EOF
-  mv "$MODEL_DIR/$FILE" "$MODEL_DIR/$EXPECTED_FILE"
-  echo "[ENTRYPOINT] Descarga completada y archivo renombrado."
+  echo "[ENTRYPOINT] Descarga completada."
 else
   echo "[ENTRYPOINT] Modelo ya existe, saltando descarga."
 fi

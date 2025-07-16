@@ -1,3 +1,4 @@
+version: "3.10"
 services:
   gpt-cpu:
     build:
@@ -8,6 +9,8 @@ services:
     environment:
       - MODEL_PATH=/app/models/mistral-7b-instruct.Q4_K_M.gguf
       - USE_GPU=false
+      - BATCH_SIZE=${BATCH_SIZE}
+      - NUM_THREADS=${NUM_THREADS}
     volumes:
       - ./cache/models:/app/models
       - ./cache/cache:/root/.cache/llama_cpp
@@ -25,17 +28,12 @@ services:
         USE_GPU: "true"
     profiles: ["gpu"]
     runtime: nvidia
-    deploy: # (opcional, no necesario en local)
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
-      - MODEL_PATH=/app/models/mistral-7b-instruct.Q4_K_M.gguf
+      - MODEL_PATH=/app/models/openhermes-2.5-mistral-7b.Q8_0.gguf
       - USE_GPU=true
+      - BATCH_SIZE=${BATCH_SIZE}
+      - NUM_THREADS=${NUM_THREADS}
     volumes:
       - ./cache/models:/app/models
       - ./cache/cache:/root/.cache/llama_cpp
