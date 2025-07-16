@@ -22,11 +22,8 @@ Stores historical Q&A pairs, human-verified corrections (errata), and support an
 
 ## ⚙️ Requirements
 
-Docker & Docker Compose
-
-Python 3.10+
-
-Compatible LLM model (already included in the image)
+- Docker 28.2.2 or higher
+- GNU Make 4.3 or higher
 
 ## 🚀 How to Run
 
