@@ -27,7 +27,7 @@ RUN git clone https://github.com/ggerganov/llama.cpp.git /llama.cpp && \
     else \
       cmake .. && make -j$(nproc); \
     fi && \
-    pip3 install --force-reinstall --no-cache-dir /llama.cpp/python-package
+    RUN pip3 install --force-reinstall --no-cache-dir /llama.cpp/python
 
 WORKDIR /app
 
