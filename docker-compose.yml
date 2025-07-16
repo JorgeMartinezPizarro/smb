@@ -1,4 +1,3 @@
-version: "3.10"
 services:
   gpt-cpu:
     build:
@@ -43,6 +42,7 @@ services:
       timeout: 10s
       retries: 10
       start_period: 60s
+
   mailer:
     build: ./src/mailer
     depends_on:

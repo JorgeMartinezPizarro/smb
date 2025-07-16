@@ -4,9 +4,6 @@ build:
 up: build
 	docker compose up -d
 
-up-gpu: build
-	docker compose up -d --gpus all
-
 down:
 	docker compose down
 
