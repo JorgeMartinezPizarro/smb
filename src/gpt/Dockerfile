@@ -26,8 +26,9 @@ RUN git clone https://github.com/ggerganov/llama.cpp.git /llama.cpp && \
       cmake .. -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=86 && make -j$(nproc); \
     else \
       cmake .. && make -j$(nproc); \
-    fi && \
-    RUN pip3 install --force-reinstall --no-cache-dir /llama.cpp/python
+    fi
+    
+RUN pip3 install --force-reinstall --no-cache-dir /llama.cpp/python
 
 WORKDIR /app
 
