@@ -24,8 +24,12 @@ ps:
 
 run-gpu:
 	docker build -t gpt-gpu ./src/gpt
-	docker run -d --debug --rm --gpus all \
+	docker run -d --rm --gpus all \
 		--name gpt-gpu  \
+		--restart unless-stopped \
+		--health-cmd="curl -f http://localhost:5000/health || exit 1" \
+		--health-interval=30s \
+		--health-retries=3 \
 		-e MODEL_PATH=/app/models/openhermes-2.5-mistral-7b.Q8_0.gguf \
 		-e USE_GPU=true \
 		-e BATCH_SIZE=${BATCH_SIZE} \
