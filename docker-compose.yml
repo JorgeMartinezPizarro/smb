@@ -1,10 +1,9 @@
-version: "3.9"
 services:
   gpt-cpu:
     build:
       context: ./src/gpt
       args:
-        USE_GPU: "false"
+        USE_CUDA: "cpu"
     profiles: ["cpu"]
     environment:
       - MODEL_PATH=/app/models/mistral-7b-instruct.Q4_K_M.gguf
