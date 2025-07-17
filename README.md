@@ -51,30 +51,32 @@ The reply is sent back via SMTP, and the interaction is stored for future contex
 
 ```
 smb/
+├── assets
+│   ├── faq.txt
+│   └── prompt.txt
 ├── docker-compose.yml
 ├── Makefile
 ├── README.md
 └── src
-├── db/
-│ ├── Dockerfile
-│ ├── entrypoint.sh
-│ └── init.sql
-├── gpt/
-│ ├── Dockerfile
-│ ├── entrypoint.sh
-│ ├── load_model.py
-│ └── requirements.txt
-├── mailer/
-│ ├── Dockerfile
-│ └── main.py
-└── orchestrator/
-├── data/
-│ └── faq.txt
-├── Dockerfile
-├── faq_ingest.py
-├── main.py
-├── prompt.txt
-└── retriever.py
+    ├── db
+    │   ├── Dockerfile
+    │   ├── entrypoint.sh
+    │   └── init.sql
+    ├── gpt
+    │   ├── Dockerfile
+    │   ├── entrypoint.sh
+    │   ├── load_model.py
+    │   └── requirements.txt
+    ├── mailer
+    │   ├── Dockerfile
+    │   └── main.py
+    └── orchestrator
+        ├── data
+        ├── Dockerfile
+        ├── faq_ingest.py
+        ├── main.py
+        ├── prompt.txt
+        └── retriever.py
 ```
 
 ## ✨ Features
