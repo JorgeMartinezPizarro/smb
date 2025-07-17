@@ -1,7 +1,7 @@
 .PHONY: build up down logs restart ps
 
 build:
-	docker compose build --build-arg USE_GPU=false
+	docker compose build --build-arg USE_GPU=${USE_GPU}
 
 up: build
 	docker compose up -d
