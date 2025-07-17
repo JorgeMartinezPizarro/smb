@@ -91,11 +91,6 @@ Fully local LLM usage — no API keys or external services required
 
 Flexible data ingestion (FAQs, human corrections, error reports)
 
-## 📜 License: HAAT
-
-This product is licensed as a [haat](https://github.com/JorgeMartinezPizarro/haat/blob/main/LICENSE.md).
-
-
 ## 👤 Author
 
 Jorge Martínez Pizarro
@@ -103,3 +98,7 @@ Jorge Martínez Pizarro
 A mathematical programmer
 
 https://ideniox.com
+
+## 📜 License
+
+This product is licensed as a [haat](https://github.com/JorgeMartinezPizarro/haat/blob/main/LICENSE.md).

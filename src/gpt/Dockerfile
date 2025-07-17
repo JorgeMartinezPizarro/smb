@@ -15,7 +15,7 @@ WORKDIR /llama.cpp
 
 RUN git clone https://github.com/ggerganov/llama.cpp.git . && \
     mkdir build && \
-    cmake -S . -B build && \
+    cmake -S . -B build -DLLAMA_CUBLAS=ON && \
     cmake --build build -j$(nproc)
 
 RUN pip install --upgrade pip setuptools wheel && \

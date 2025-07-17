@@ -22,7 +22,8 @@ services:
       start_period: 60s
 
   mailer:
-    build: ./src/mailer
+    build:
+      context: ./src/mailer
     environment:
       - EMAIL_USER=${MAIL_USER}
       - EMAIL_PASS=${MAIL_PASS}
@@ -30,7 +31,8 @@ services:
       - ORCHESTRATOR_URL=http://orchestrator:5000/process_email
 
   db:
-    build: ./src/db
+    build:
+      context: ./src/db
     volumes:
       - ./cache/sqlite:/data
 
