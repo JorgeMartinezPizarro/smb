@@ -8,30 +8,33 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential cmake curl git libopenblas-dev libcurl4-openssl-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+RUN ln -s /usr/bin/python3.9 /usr/local/bin/python && \
+    ln -s /usr/bin/pip3 /usr/local/bin/pip
 
-COPY requirements.txt ./
+WORKDIR /llama.cpp
 
-RUN pip3 install --upgrade pip
-RUN pip3 install --no-cache-dir -r requirements.txt
-
-ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH
-ENV LIBRARY_PATH=/usr/local/cuda/lib64/stubs:$LIBRARY_PATH
-
-RUN git clone https://github.com/ggerganov/llama.cpp.git /llama.cpp && \
-    mkdir -p /llama.cpp/build && cd /llama.cpp/build && \
+RUN git clone https://github.com/ggerganov/llama.cpp.git . && \
+    mkdir build && cd build && \
     if [ "$USE_GPU" = "true" ]; then \
-      cmake .. -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=86 && make -j$(nproc); \
+      cmake .. -DLLAMA_CUBLAS=on -DCMAKE_CUDA_ARCHITECTURES=86 && make -j$(nproc); \
     else \
       cmake .. && make -j$(nproc); \
     fi
 
+WORKDIR /llama.cpp
+
+RUN pip install --upgrade pip setuptools wheel
+
+RUN CMAKE_ARGS="-DLLAMA_CUBLAS=${USE_GPU}" FORCE_CMAKE=1 pip install .
+
 WORKDIR /app
+
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
 RUN chmod +x entrypoint.sh
 
 EXPOSE 5000
-
 ENTRYPOINT ["./entrypoint.sh"]
