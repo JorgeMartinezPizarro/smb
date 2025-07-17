@@ -1,3 +1,4 @@
 #!/bin/sh
-sqlite3 /data/db.sqlite < /init.sql
+echo "Initialiting database ... or not"
+sqlite3 /data/db.sqlite < /app/init.sql
 tail -f /dev/null
