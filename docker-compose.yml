@@ -26,7 +26,6 @@ services:
       args:
         USE_GPU: "true"
     profiles: ["gpu"]
-    runtime: nvidia
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - MODEL_PATH=/app/models/openhermes-2.5-mistral-7b.Q8_0.gguf
