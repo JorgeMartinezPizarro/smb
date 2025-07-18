@@ -6,13 +6,8 @@ echo "[ENTRYPOINT] Modo de ejecución: USE_GPU=$USE_GPU"
 MODEL_DIR=$(dirname "$MODEL_PATH")
 MODEL_FILE="$MODEL_PATH"
 
-if [ "$USE_GPU" = "true" ]; then
-  REPO="TheBloke/OpenHermes-2.5-Mistral-7B-GGUF"
-  FILE="openhermes-2.5-mistral-7b.Q8_0.gguf"
-else
-  REPO="bartowski/Mistral-7B-Instruct-v0.3-GGUF"
-  FILE="Mistral-7B-Instruct-v0.3-Q4_K_M.gguf"
-fi
+REPO="bartowski/Mistral-7B-Instruct-v0.3-GGUF"
+FILE="Mistral-7B-Instruct-v0.3-Q4_K_M.gguf"
 
 mkdir -p "$MODEL_DIR"
 
@@ -31,5 +26,7 @@ EOF
 else
   echo "[ENTRYPOINT] Modelo ya existe, saltando descarga."
 fi
+
+export LLAMA_CPP_LIB=/llama-cpp-python/libllama.so
 
 exec gunicorn --workers=1 --threads=1 --timeout=300 --bind 0.0.0.0:5000 load_model:app

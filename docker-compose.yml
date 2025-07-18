@@ -6,7 +6,7 @@ services:
         USE_CUDA: "cpu"
     profiles: ["cpu"]
     environment:
-      - MODEL_PATH=/app/models/mistral-7b-instruct.Q4_K_M.gguf
+      - MODEL_PATH=/app/models/Mistral-7B-Instruct-v0.3-Q4_K_M.gguf
       - USE_GPU=false
       - BATCH_SIZE=${BATCH_SIZE}
       - NUM_THREADS=${NUM_THREADS}
@@ -47,3 +47,7 @@ services:
       - ./cache/sqlite:/data
       - ./cache/vector_db:/app/vector_db
       - ./assets/:/app/assets
+
+networks:
+  default:
+    name: gpt-network      
