@@ -21,14 +21,16 @@ down:
 	docker rm gpt-gpu 2>/dev/null || true
 
 logs:
-	docker compose logs -f
+	@docker compose logs -f &
+	@docker ps --format '{{.Names}}' | grep -q '^gpt-gpu$$' && \
+		docker logs -f gpt-gpu 2>&1 | sed -u "s/^/$(shell printf '\033[34m')gpt-gpu-1 | $(shell printf '\033[0m')/" || \
+		echo "Contenedor 'gpt-gpu' no está corriendo. ¿Lo lanzaste con 'make up'?"
 
 restart: down build up
 
 run-gpu:
 	docker run -d --gpus all \
 		--name gpt-gpu \
-		--restart unless-stopped \
 		--network gpt-network \
 		--health-cmd="curl -f http://localhost:5000/health || exit 1" \
 		--health-interval=30s \

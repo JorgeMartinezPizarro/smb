@@ -181,14 +181,14 @@ def process_email(sender, subject, body):
                      .replace("{message}", body) \
                      .replace("{context}", context_text)
 
-    logging.info(f"Prompt generado para GPT ({len(prompt)} chars):\n{prompt}")
+    logging.info(f"Prompt generado para GPT ({len(prompt)} chars)")
 
     try:
         answer = ask_gpt_with_retry(prompt)
         answer = clean_redundancy(answer)
         answer = clean_gpt_response(answer)
         
-        logging.info(f"Respuesta recibida de GPT:\n{answer}")
+        logging.info(f"Recibida respuesta de GPT\n")
     except Exception as e:
         logging.error(f"Error llamando a GPT: {e}")
         answer = ("Lo siento, hemos tenido un problema técnico y no puedo responder "

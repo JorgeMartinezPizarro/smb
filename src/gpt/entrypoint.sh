@@ -6,6 +6,7 @@ echo "[ENTRYPOINT] Modo de ejecución: USE_GPU=$USE_GPU"
 MODEL_DIR=$(dirname "$MODEL_PATH")
 MODEL_FILE="$MODEL_PATH"
 
+## TODO Move it to the config, as soon as it has been tested with other models
 REPO="bartowski/Mistral-7B-Instruct-v0.3-GGUF"
 FILE="Mistral-7B-Instruct-v0.3-Q4_K_M.gguf"
 
@@ -29,4 +30,4 @@ fi
 
 export LLAMA_CPP_LIB=/llama-cpp-python/libllama.so
 
-exec gunicorn --workers=1 --threads=1 --timeout=300 --bind 0.0.0.0:5000 load_model:app
+exec python /app/load_model.py
