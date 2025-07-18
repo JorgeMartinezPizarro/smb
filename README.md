@@ -39,13 +39,13 @@ Configure email credentials and model parameters in the .env file before running
 
 An email is received from a user.
 
-The message is vectorized and semantically compared against stored interactions.
-
 Relevant context is embedded into a dynamic prompt.
 
 A local LLM generates a natural language reply.
 
-The reply is sent back via SMTP, and the interaction is stored for future context.
+The reply is sent back via SMTP.
+
+The interaction is stored for future context.
 
 ## 📦 File Structure
 
@@ -71,11 +71,9 @@ smb/
     │   ├── Dockerfile
     │   └── main.py
     └── orchestrator
-        ├── data
         ├── Dockerfile
         ├── faq_ingest.py
         ├── main.py
-        ├── prompt.txt
         └── retriever.py
 ```
 
