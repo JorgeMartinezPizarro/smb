@@ -9,21 +9,21 @@ SMB receives incoming emails, vectorizes them, retrieves relevant past interacti
 ## 🧱 Architecture Overview
 
 Mailer
-A minimalist Python IMAP/SMTP client that fetches incoming emails and formats them for processing.
+A mail client that scan new email and request an action to orquestrtor.
 
 GPT
-A local containerized inference server running a quantized model (e.g., Mistral 7B Q4) using llama.cpp or compatible backends.
+A dockerized llama model mistral 7b for text generation.
 
 Orchestrator
-The system core: vectorizes messages, retrieves context, assembles the prompt, and calls the model to generate responses.
+The core, that create the prompt using vectorized content, historical and predefined rules. It receive an email and generate a valid response.
 
 Database (SQLite)
-Stores historical Q&A pairs, human-verified corrections (errata), and support annotations, to improve context over time.
+Storage for metrics and other information that can be used to fix bugs and improve the system.
 
 ## ⚙️ Requirements
 
-- Docker 28.2.2 or higher
-- GNU Make 4.3 or higher
+- Docker
+- Make
 
 ## 🚀 How to Run
 
@@ -78,8 +78,6 @@ smb/
 ```
 
 ## ✨ Features
-
-Vector-based retrieval of historical support cases
 
 Modular pipeline with shell-level orchestration
 
