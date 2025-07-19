@@ -2,22 +2,22 @@
 
 SMB is a modular AI-powered system to automate email support using local LLMs, semantic search, and historical interaction context.
 
-## 🧠 What it does
+## 🧱 Architecture
 
-SMB receives incoming emails, vectorizes them, retrieves relevant past interactions from a local SQLite database, and generates a personalized response using a lightweight containerized LLM.
+**Mailer**
 
-## 🧱 Architecture Overview
-
-*Mailer*
 A mail client that scan new email and request an action to orquestrtor.
 
-*GPT*
+**GPT**
+
 A dockerized llama model mistral 7b for text generation.
 
-*Orchestrator*
+**Orchestrator**
+
 The core, that create the prompt using vectorized content, historical and predefined rules. It receive an email and generate a valid response.
 
-*Database*
+**Database**
+
 Storage for metrics and other information that can be used to fix bugs and improve the system.
 
 ## ⚙️ Requirements
@@ -34,28 +34,6 @@ make up
 ```
 
 Configure email credentials and model parameters in the .env file before running.
-
-## 🧪 System Flow
-
-An email is received from a user.
-
-Relevant context is embedded into a dynamic prompt.
-
-A local LLM generates a natural language reply.
-
-The reply is sent back via SMTP.
-
-The interaction is stored for future context.
-
-## ✨ Features
-
-Modular pipeline with shell-level orchestration
-
-Custom prompt generation per message
-
-Fully local LLM usage — no API keys or external services required
-
-Flexible data ingestion (FAQs, human corrections, error reports)
 
 ## 👤 Author
 
