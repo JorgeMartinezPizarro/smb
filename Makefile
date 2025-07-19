@@ -2,14 +2,31 @@
 
 include .env
 
+REGISTRY ?= $(REGISTRY_USER)
+REPO ?= $(REGISTRY_REPO)
+TAG ?= $(IMAGE_TAG)
+
 build:
 ifeq ($(COMPOSE_PROFILES),gpu)
-	docker build --progress=plain --build-arg USE_CUDA=cuda --build-arg GGML_CUDA=1 -t gpt-gpu ./src/gpt
+	# Build GPU image manualmente
+	docker build --progress=plain \
+		--build-arg USE_CUDA=cuda \
+		--build-arg GGML_CUDA=1 \
+		-t gpt-gpu \
+		-t $(REGISTRY)/$(REPO)-gpt-gpu:$(TAG) \
+		./src/gpt
+
+	# Build mailer, db, orchestrator desde compose
+	docker compose build mailer db orchestrator
+	docker tag $(REPO)-mailer:$(TAG) $(REGISTRY)/$(REPO)-mailer:$(TAG) || true
+	docker tag $(REPO)-db:$(TAG) $(REGISTRY)/$(REPO)-db:$(TAG) || true
+	docker tag $(REPO)-orchestrator:$(TAG) $(REGISTRY)/$(REPO)-orchestrator:$(TAG) || true
 else
-	docker compose build --build-arg USE_CUDA=cpu
+	# Build CPU y el resto de imágenes con Compose
+	docker compose build
 endif
 
-up: build
+up:
 	docker compose up -d
 ifeq ($(COMPOSE_PROFILES),gpu)
 	$(MAKE) run-gpu
@@ -49,3 +66,23 @@ test-gpu:
 	@echo "Comprobando si Docker y NVIDIA Container Toolkit están correctamente configurados..."
 	@docker run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi || \\
 		(echo "ERROR: No se detecta configuración correcta para GPUs en Docker. Verifica que tengas instalado nvidia-container-toolkit y que el daemon de Docker esté configurado." && exit 1)
+
+push:
+ifeq ($(COMPOSE_PROFILES),gpu)
+	docker push $(REGISTRY)/$(REPO)-gpt-gpu:$(TAG)
+else
+	docker push $(REGISTRY)/$(REPO)-gpt-cpu:$(TAG)
+endif
+	docker push $(REGISTRY)/$(REPO)-mailer:$(TAG)
+	docker push $(REGISTRY)/$(REPO)-db:$(TAG)
+	docker push $(REGISTRY)/$(REPO)-orchestrator:$(TAG)
+
+pull:
+ifeq ($(COMPOSE_PROFILES),gpu)
+	docker pull $(REGISTRY)/$(REPO)-gpt-gpu:$(TAG)
+else
+	docker pull $(REGISTRY)/$(REPO)-gpt-cpu:$(TAG)
+endif
+	docker pull $(REGISTRY)/$(REPO)-mailer:$(TAG)
+	docker pull $(REGISTRY)/$(REPO)-db:$(TAG)
+	docker pull $(REGISTRY)/$(REPO)-orchestrator:$(TAG)
