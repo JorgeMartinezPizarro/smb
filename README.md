@@ -10,7 +10,7 @@ A mail client that scan new email and request an action to orquestrtor.
 
 **GPT**
 
-A dockerized llama model mistral 7b for text generation.
+A dockerized Mistral 7B LLaMA-based model for text generation.
 
 **Orchestrator**
 
@@ -18,7 +18,7 @@ The core, that create the prompt using vectorized content, historical and predef
 
 **Database**
 
-Storage for metrics and other information that can be used to fix bugs and improve the system.
+Stores metrics and other information useful for debugging and improving the system.
 
 ## ⚙️ Requirements
 
