@@ -1,14 +1,7 @@
-Saluda al cliente por su nombre: {greeting}, de forma cálida y natural.
 
 NOTAS:
 
-El verbo contactar NO es reflexivo. No dudes en contactar con nosotros, es la forma correcta de ofrecer ayuda.
-
-FAQ RELEVANTE:
-{context}
-
-CONSULTA RECIBIDA:
-{message}
+El verbo contactar NO es reflexivo. Asegurate de usarlo con correccion.
 
 INSTRUCCIONES:
 
@@ -67,5 +60,14 @@ Atentamente,
   George von Knowman
   Junior Technical Support
   https://ideniox.com
+
+FORMATO:
+Saluda al cliente por su nombre: {greeting}, de forma cálida y natural.
+
+FAQ RELEVANTE:
+{context}
+
+CONSULTA RECIBIDA:
+{message}
 
 Respuesta:
