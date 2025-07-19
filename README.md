@@ -8,16 +8,16 @@ SMB receives incoming emails, vectorizes them, retrieves relevant past interacti
 
 ## 🧱 Architecture Overview
 
-Mailer
+*Mailer*
 A mail client that scan new email and request an action to orquestrtor.
 
-GPT
+*GPT*
 A dockerized llama model mistral 7b for text generation.
 
-Orchestrator
+*Orchestrator*
 The core, that create the prompt using vectorized content, historical and predefined rules. It receive an email and generate a valid response.
 
-Database (SQLite)
+*Database*
 Storage for metrics and other information that can be used to fix bugs and improve the system.
 
 ## ⚙️ Requirements
@@ -46,36 +46,6 @@ A local LLM generates a natural language reply.
 The reply is sent back via SMTP.
 
 The interaction is stored for future context.
-
-## 📦 File Structure
-
-```
-smb/
-├── assets
-│   ├── faq.txt
-│   └── prompt.txt
-├── docker-compose.yml
-├── Makefile
-├── README.md
-└── src
-    ├── db
-    │   ├── Dockerfile
-    │   ├── entrypoint.sh
-    │   └── init.sql
-    ├── gpt
-    │   ├── Dockerfile
-    │   ├── entrypoint.sh
-    │   ├── load_model.py
-    │   └── requirements.txt
-    ├── mailer
-    │   ├── Dockerfile
-    │   └── main.py
-    └── orchestrator
-        ├── Dockerfile
-        ├── faq_ingest.py
-        ├── main.py
-        └── retriever.py
-```
 
 ## ✨ Features
 

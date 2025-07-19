@@ -23,8 +23,7 @@ down:
 logs:
 	@docker compose logs -f &
 	@docker ps --format '{{.Names}}' | grep -q '^gpt-gpu$$' && \
-		docker logs -f gpt-gpu 2>&1 | sed -u "s/^/$(shell printf '\033[34m')gpt-gpu-1 | $(shell printf '\033[0m')/" || \
-		echo "Contenedor 'gpt-gpu' no está corriendo. ¿Lo lanzaste con 'make up'?"
+		docker logs -f gpt-gpu 2>&1 | sed -u "s/^/$(shell printf '\033[34m')gpt-gpu-1 | $(shell printf '\033[0m')/" || true
 
 restart: down build up
 
@@ -48,5 +47,5 @@ run-gpu:
 
 test-gpu:
 	@echo "Comprobando si Docker y NVIDIA Container Toolkit están correctamente configurados..."
-	@docker run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi || \
+	@docker run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi || \\
 		(echo "ERROR: No se detecta configuración correcta para GPUs en Docker. Verifica que tengas instalado nvidia-container-toolkit y que el daemon de Docker esté configurado." && exit 1)
