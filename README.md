@@ -33,7 +33,9 @@ cd smb
 make up
 ```
 
-Configure email credentials and model parameters in the .env file before running.
+Configure email credentials and model parameters in the .env file before running. [See config examples](docs/config.md) or look at the `.env.sample` for more details.
+
+After the setup and load of `SMB`, you can start sending emails to your `MAIL_USER` and wait for the response.
 
 ## 👤 Author
 
