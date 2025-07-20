@@ -64,13 +64,9 @@ Atentamente,
 FORMATO:
 Saluda al cliente por su nombre: {greeting}, de forma cálida y natural.
 
-HISTORIC:
-{history}
-
 FAQ RELEVANTE:
 {context}
 
 CONSULTA RECIBIDA:
 {message}
-
 Respuesta:

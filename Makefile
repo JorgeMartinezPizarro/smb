@@ -48,7 +48,7 @@ run-gpu:
 		--health-cmd="curl -f http://localhost:5000/health || exit 1" \
 		--health-interval=30s \
 		--health-retries=3 \
-		-e MODEL_PATH=/app/models/deepseek-llm-7b-chat.Q4_K_M.gguf \
+		-e MODEL_PATH=/app/models/Mistral-7B-Instruct-v0.3-Q4_K_M.gguf \
 		-e USE_GPU=true \
 		-e USE_CUDA=cuda \
 		-e NUM_THREADS=${NUM_THREADS} \
