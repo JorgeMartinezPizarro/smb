@@ -32,14 +32,17 @@ ifeq ($(COMPOSE_PROFILES),gpu)
 endif
 
 down:
-	docker compose down --remove-orphans
 	docker kill gpt-gpu 2>/dev/null || true
 	docker rm gpt-gpu 2>/dev/null || true
-
+	docker compose down --remove-orphans
+	
 logs:
-	@docker compose logs -f &
-	@docker ps --format '{{.Names}}' | grep -q '^gpt-gpu$$' && \
-		docker logs -f gpt-gpu 2>&1 | sed -u "s/^/$(shell printf '\033[34m')gpt-gpu-1 | $(shell printf '\033[0m')/" || true
+	@bash -c '\
+		trap "kill 0" EXIT; \
+		docker compose logs -f & \
+		docker logs -f gpt-gpu 2>&1 | sed -u "s/^/\033[34mgpt-gpu | \033[0m/" & \
+		wait \
+	'
 
 restart: down build up
 
