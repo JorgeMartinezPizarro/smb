@@ -15,6 +15,7 @@ if [ ! -f "${MODEL_PATH}" ]; then
 from huggingface_hub import hf_hub_download
 hf_hub_download(
   repo_id="$LLM_REPO",
+  filename="$LLM_NAME",
   local_dir="$MODEL_DIR",
   local_dir_use_symlinks=False
 )
