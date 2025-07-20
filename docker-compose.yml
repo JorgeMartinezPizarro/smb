@@ -10,7 +10,8 @@ services:
       - MAX_PROMPT_LENGTH=${MAX_PROMPT_LENGTH}
       - MAX_TOKENS=${MAX_TOKENS}
       - GPU_LAYERS=${GPU_LAYERS}
-      - MODEL_PATH=/app/models/Mistral-7B-Instruct-v0.3-Q4_K_M.gguf
+      - LLM_REPO=${LLM_REPO}
+      - LLM_NAME=${LLM_NAME}
       - USE_GPU=false
       - BATCH_SIZE=${BATCH_SIZE}
       - NUM_THREADS=${NUM_THREADS}

@@ -15,6 +15,8 @@ USE_GPU=false
 MAX_PROMPT_LENGTH=2048
 MAX_TOKENS=256
 GPU_LAYERS=0
+REPO="bartowski/Mistral-7B-Instruct-v0.3-GGUF"
+FILE="Mistral-7B-Instruct-v0.3-Q4_K_M.gguf"
 ```
 
 **Results**
@@ -36,6 +38,8 @@ USE_GPU=true
 MAX_PROMPT_LENGTH=2048
 MAX_TOKENS=512
 GPU_LAYERS=33
+REPO="bartowski/Mistral-7B-Instruct-v0.3-GGUF"
+FILE="Mistral-7B-Instruct-v0.3-Q4_K_M.gguf"
 ```
 
 **Results**

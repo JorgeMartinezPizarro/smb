@@ -13,17 +13,17 @@ model_ready = threading.Event()
 model_lock = threading.Lock()
 llm = None
 
-MODEL_PATH = os.environ.get("MODEL_PATH", "/app/models/deepseek-llm-7b-chat.Q4_K_M.gguf")
-NUM_THREADS = int(os.environ.get("NUM_THREADS", 4))
-BATCH_SIZE = int(os.environ.get("BATCH_SIZE", 1024))
-MAX_PROMPT_LENGTH = int(os.environ.get("MAX_PROMPT_LENGTH", 1024)) 
-MAX_TOKENS = int(os.environ.get("MAX_TOKENS", 1024)) 
-GPU_LAYERS = int(os.environ.get("GPU_LAYERS", 33)) 
+MODEL_PATH = os.environ.get("MODEL_PATH", "")
+NUM_THREADS = int(os.environ.get("NUM_THREADS", 1))
+BATCH_SIZE = int(os.environ.get("BATCH_SIZE", 128))
+MAX_PROMPT_LENGTH = int(os.environ.get("MAX_PROMPT_LENGTH", 128)) 
+MAX_TOKENS = int(os.environ.get("MAX_TOKENS", 128)) 
+GPU_LAYERS = int(os.environ.get("GPU_LAYERS", 2)) 
 USE_GPU = os.environ.get("USE_GPU", "false").lower() == "true"
 
 def load_model():
 	global llm
-	logging.info(f"🔄 Cargando modelo con llama-cpp... {USE_GPU}")
+	logging.info(f"🔄 Cargando modelo con llama-cpp... GPU={USE_GPU}")
 	logging.info(getattr(Llama, "GGML_CUDA", "NO CUDA"))
 	logging.info(os.environ.get("LLAMA_CPP_LIB"))
 	try:

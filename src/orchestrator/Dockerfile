@@ -12,6 +12,6 @@ RUN pip install --no-cache-dir \
     flask \
     faiss-cpu
 
-COPY . .
+COPY faq_ingest.py main.py retriever.py .
 
 CMD ["python", "main.py"]

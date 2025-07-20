@@ -2,9 +2,12 @@
 
 include .env
 
-REGISTRY ?= $(REGISTRY_USER)
-REPO ?= $(REGISTRY_REPO)
-TAG ?= $(IMAGE_TAG)
+## NOTE:
+#
+#  We use docker run cause docker compose still not support 100% GPU,
+#  it may be reviewed and fixed in the feature. For now it was 
+#  important to ensure that it works on Windows with the WSL.
+#
 
 build:
 ifeq ($(COMPOSE_PROFILES),gpu)
@@ -12,8 +15,7 @@ ifeq ($(COMPOSE_PROFILES),gpu)
 	docker build --progress=plain \
 		--build-arg USE_CUDA=cuda \
 		--build-arg GGML_CUDA=1 \
-		-t gpt-gpu \
-		-t $(REGISTRY)/$(REPO)-gpt-gpu:$(TAG) \
+		-t $(REGISTRY_USER)/${REGISTRY_REPO}-gpt-gpu:${IMAGE_TAG} \
 		./src/gpt
 
 	# Build mailer, db, orchestrator desde compose
@@ -48,7 +50,8 @@ run-gpu:
 		--health-cmd="curl -f http://localhost:5000/health || exit 1" \
 		--health-interval=30s \
 		--health-retries=3 \
-		-e MODEL_PATH=/app/models/Mistral-7B-Instruct-v0.3-Q4_K_M.gguf \
+		-e LLM_REPO=${LLM_REPO} \
+		-e LLM_NAME=${LLM_NAME} \
 		-e USE_GPU=true \
 		-e USE_CUDA=cuda \
 		-e NUM_THREADS=${NUM_THREADS} \
@@ -62,8 +65,7 @@ run-gpu:
 		-v ./cache/models:/app/models \
 		-v ./cache/cache:/root/.cache/llama_cpp \
 		-p 5000:5000 \
-		gpt-gpu
-
+		$(REGISTRY_USER)/${REGISTRY_REPO}-gpt-gpu:${IMAGE_TAG}
 test-gpu:
 	@echo "Comprobando si Docker y NVIDIA Container Toolkit están correctamente configurados..."
 	@docker run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi || \\
@@ -71,20 +73,20 @@ test-gpu:
 
 push:
 ifeq ($(COMPOSE_PROFILES),gpu)
-	docker push $(REGISTRY)/$(REPO)-gpt-gpu:$(TAG)
+	docker push ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-gpu:${IMAGE_TAG}
 else
-	docker push $(REGISTRY)/$(REPO)-gpt-cpu:$(TAG)
+	docker push ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-cpu:${IMAGE_TAG}
 endif
-	docker push $(REGISTRY)/$(REPO)-mailer:$(TAG)
-	docker push $(REGISTRY)/$(REPO)-db:$(TAG)
-	docker push $(REGISTRY)/$(REPO)-orchestrator:$(TAG)
+	docker push ${REGISTRY_USER}/${REGISTRY_REPO}-mailer:${IMAGE_TAG}
+	docker push ${REGISTRY_USER}/${REGISTRY_REPO}-db:${IMAGE_TAG}
+	docker push ${REGISTRY_USER}/${REGISTRY_REPO}-orchestrator:${IMAGE_TAG}
 
 pull:
 ifeq ($(COMPOSE_PROFILES),gpu)
-	docker pull $(REGISTRY)/$(REPO)-gpt-gpu:$(TAG)
+	docker pull ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-gpu:${IMAGE_TAG}
 else
-	docker pull $(REGISTRY)/$(REPO)-gpt-cpu:$(TAG)
+	docker pull ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-cpu:${IMAGE_TAG}
 endif
-	docker pull $(REGISTRY)/$(REPO)-mailer:$(TAG)
-	docker pull $(REGISTRY)/$(REPO)-db:$(TAG)
-	docker pull $(REGISTRY)/$(REPO)-orchestrator:$(TAG)
+	docker pull ${REGISTRY_USER}/${REGISTRY_REPO}-mailer:${IMAGE_TAG}
+	docker pull ${REGISTRY_USER}/${REGISTRY_REPO}-db:${IMAGE_TAG}
+	docker pull ${REGISTRY_USER}/${REGISTRY_REPO}-orchestrator:${IMAGE_TAG}
