@@ -30,6 +30,7 @@ else
   echo "[ENTRYPOINT] Modelo ya existe, saltando descarga."
 fi
 
+
 export LLAMA_CPP_LIB=/llama-cpp-python/libllama.so
 
 exec python /app/load_model.py
