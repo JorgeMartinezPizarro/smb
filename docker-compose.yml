@@ -3,7 +3,12 @@ services:
     image: ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-cpu:${IMAGE_TAG}
     profiles: ["cpu"]
     environment:
-      - MODEL_PATH=/app/models/Mistral-7B-Instruct-v0.3-Q4_K_M.gguf
+      - NUM_THREADS = ${NUM_THREADS}
+      - BATCH_SIZE = ${BATCH_SIZE}
+      - MAX_PROMPT_LENGTH = ${MAX_PROMPT_LENGTH}
+      - MAX_TOKENS = ${MAX_TOKENS}
+      - GPU_LAYERS = ${GPU_LAYERS}
+      - MODEL_PATH=/app/models/deepseek-llm-7b-chat.Q4_K_M.gguf
       - USE_GPU=false
       - BATCH_SIZE=${BATCH_SIZE}
       - NUM_THREADS=${NUM_THREADS}

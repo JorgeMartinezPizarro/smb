@@ -18,9 +18,6 @@ ifeq ($(COMPOSE_PROFILES),gpu)
 
 	# Build mailer, db, orchestrator desde compose
 	docker compose build mailer db orchestrator
-	docker tag $(REPO)-mailer:$(TAG) $(REGISTRY)/$(REPO)-mailer:$(TAG) || true
-	docker tag $(REPO)-db:$(TAG) $(REGISTRY)/$(REPO)-db:$(TAG) || true
-	docker tag $(REPO)-orchestrator:$(TAG) $(REGISTRY)/$(REPO)-orchestrator:$(TAG) || true
 else
 	# Build CPU y el resto de imágenes con Compose
 	docker compose build
@@ -51,9 +48,14 @@ run-gpu:
 		--health-cmd="curl -f http://localhost:5000/health || exit 1" \
 		--health-interval=30s \
 		--health-retries=3 \
-		-e MODEL_PATH=/app/models/Mistral-7B-Instruct-v0.3-Q4_K_M.gguf \
+		-e MODEL_PATH=/app/models/deepseek-llm-7b-chat.Q4_K_M.gguf \
 		-e USE_GPU=true \
 		-e USE_CUDA=cuda \
+		-e NUM_THREADS = ${NUM_THREADS} \
+      	-e BATCH_SIZE = ${BATCH_SIZE} \
+      	-e MAX_PROMPT_LENGTH = ${MAX_PROMPT_LENGTH} \
+      	-e MAX_TOKENS = ${MAX_TOKENS} \
+      	-e GPU_LAYERS = ${GPU_LAYERS} \
 		-e GGML_CUDA=1 \
 		-e BATCH_SIZE=$(BATCH_SIZE) \
 		-e NUM_THREADS=$(NUM_THREADS) \

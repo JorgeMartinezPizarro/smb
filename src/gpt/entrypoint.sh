@@ -7,8 +7,10 @@ MODEL_DIR=$(dirname "$MODEL_PATH")
 MODEL_FILE="$MODEL_PATH"
 
 ## TODO Move it to the config, as soon as it has been tested with other models
-REPO="bartowski/Mistral-7B-Instruct-v0.3-GGUF"
-FILE="Mistral-7B-Instruct-v0.3-Q4_K_M.gguf"
+#REPO="bartowski/Mistral-7B-Instruct-v0.3-GGUF"
+#FILE="Mistral-7B-Instruct-v0.3-Q4_K_M.gguf"
+REPO=TheBloke/deepseek-llm-7B-chat-GGUF
+FILE=deepseek-llm-7b-chat.Q4_K_M.gguf
 
 mkdir -p "$MODEL_DIR"
 
