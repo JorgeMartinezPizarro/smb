@@ -2,6 +2,8 @@ services:
   gpt-cpu:
     image: ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-cpu:${IMAGE_TAG}
     profiles: ["cpu"]
+    build:
+      context: ./src/gpt
     environment:
       - NUM_THREADS=${NUM_THREADS}
       - BATCH_SIZE=${BATCH_SIZE}
@@ -24,6 +26,8 @@ services:
 
   mailer:
     image: ${REGISTRY_USER}/${REGISTRY_REPO}-mailer:${IMAGE_TAG}
+    build:
+      context: ./src/mailer
     environment:
       - EMAIL_USER=${MAIL_USER}
       - EMAIL_PASS=${MAIL_PASS}
@@ -32,11 +36,15 @@ services:
 
   db:
     image: ${REGISTRY_USER}/${REGISTRY_REPO}-db:${IMAGE_TAG}
+    build:
+      context: ./src/db
     volumes:
       - ./cache/sqlite:/data
 
   orchestrator:
     image: ${REGISTRY_USER}/${REGISTRY_REPO}-orchestrator:${IMAGE_TAG}
+    build:
+      context: ./src/orchestrator
     environment:
       - DB_PATH=/data/db.sqlite
       - GPT_URL=http://${GPT_SERVICE}:5000/gpt
