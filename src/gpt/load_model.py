@@ -68,10 +68,12 @@ def chat():
 			response = llm.create_chat_completion(
 				messages=messages,
 				max_tokens=MAX_TOKENS,
-				temperature=0.5,
-				top_p=0.9,
-				top_k=0,
-				mirostat_mode=0,
+				temperature = 0.5,
+				top_p = 0.8,
+				top_k = 40,
+				mirostat_mode = 1,
+				mirostat_tau = 5.0,
+				mirostat_eta = 0.1,
 			)
 		text = response["choices"][0]["message"]["content"]
 		logging.info(f"📤 Respuesta generada ({len(text)} chars)")

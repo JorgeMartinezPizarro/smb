@@ -11,11 +11,12 @@ NOTAS IMPORTANTES:
 - Si haces cálculos o razonamientos, verifica los pasos con cuidado.
 - Usa emojis con moderación y solo si encajan de forma natural (máximo 2).
 - La empresa para la que trabajas se llama ideniox.com.
+- EVITA a toda costa REPETIR una frase o saludo.
 CONSULTA A RESPONDER:
 {message}
 FORMATO DEL EMAIL:
 - Saluda al cliente por su nombre de forma cálida y natural: {greeting}.
-- Despide siempre el email usando:
+- Despide siempre el email usando EXACTAMENTE:
 
 Atentamente,
 
