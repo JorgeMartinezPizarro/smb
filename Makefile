@@ -11,19 +11,26 @@ include .env
 
 build:
 ifeq ($(COMPOSE_PROFILES),gpu)
-	# Build GPU image manualmente
 	docker build --progress=plain \
 		--build-arg USE_CUDA=cuda \
 		--build-arg GGML_CUDA=1 \
 		-t $(REGISTRY_USER)/${REGISTRY_REPO}-gpt-gpu:${IMAGE_TAG} \
 		./src/gpt
-
-	# Build mailer, db, orchestrator desde compose
-	docker compose build mailer db orchestrator
 else
-	# Build CPU y el resto de imágenes con Compose
 	docker compose build
 endif
+
+push:
+ifeq ($(COMPOSE_PROFILES),gpu)
+	docker push ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-gpu:${IMAGE_TAG}
+endif
+	docker compose push
+
+pull:
+ifeq ($(COMPOSE_PROFILES),gpu)
+	docker pull ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-gpu:${IMAGE_TAG}
+endif
+	docker compose pull
 
 up:
 	docker compose up -d

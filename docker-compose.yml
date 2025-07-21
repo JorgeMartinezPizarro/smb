@@ -24,7 +24,18 @@ services:
       timeout: 10s
       retries: 10
       start_period: 60s
-
+  # TODO: use it when docker compose is ready for it!
+  #
+  # gpt-gpu:
+  #   image: ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-gpu:${IMAGE_TAG}
+  #   profiles: ["gpu"]
+  #   runtime: nvidia
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - capabilities: [gpu]
+  #
   mailer:
     image: ${REGISTRY_USER}/${REGISTRY_REPO}-mailer:${IMAGE_TAG}
     build:
