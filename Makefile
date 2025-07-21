@@ -40,7 +40,7 @@ logs:
 	@bash -c '\
 		trap "kill 0" EXIT; \
 		docker compose logs -f & \
-		docker logs -f gpt-gpu 2>&1 | sed -u "s/^/\033[34mgpt-gpu | \033[0m/" & \
+		docker logs -f gpt-gpu 2>&1 | awk '\''{print "\033[35mgpt-gpu | \033[0m" $$0}'\'' & \
 		wait \
 	'
 
