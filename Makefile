@@ -1,4 +1,4 @@
-.PHONY: build up down logs restart ps run-gpu test-gpu
+.PHONY: build pull push up down logs test-gpu
 
 include .env
 
@@ -35,25 +35,6 @@ endif
 up:
 	docker compose up -d
 ifeq ($(COMPOSE_PROFILES),gpu)
-	$(MAKE) run-gpu
-endif
-
-down:
-	docker kill gpt-gpu 2>/dev/null || true
-	docker rm gpt-gpu 2>/dev/null || true
-	docker compose down --remove-orphans
-	
-logs:
-	@bash -c '\
-		trap "kill 0" EXIT; \
-		docker compose logs -f & \
-		docker logs -f gpt-gpu 2>&1 | awk '\''{print "\033[35mgpt-gpu | \033[0m" $$0}'\'' & \
-		wait \
-	'
-
-restart: down build up
-
-run-gpu:
 	docker run -d --gpus all \
 		--name gpt-gpu \
 		--network gpt-network \
@@ -76,7 +57,22 @@ run-gpu:
 		-v ./cache/cache:/root/.cache/llama_cpp \
 		-p 5000:5000 \
 		$(REGISTRY_USER)/${REGISTRY_REPO}-gpt-gpu:${IMAGE_TAG}
+endif
+
+down:
+	docker kill gpt-gpu 2>/dev/null || true
+	docker rm gpt-gpu 2>/dev/null || true
+	docker compose down --remove-orphans
+	
+logs:
+	@bash -c '\
+		trap "kill 0" EXIT; \
+		docker compose logs -f & \
+		docker logs -f gpt-gpu 2>&1 | awk '\''{print "\033[35mgpt-gpu | \033[0m" $$0}'\'' & \
+		wait \
+	'
+
 test-gpu:
-	@echo "Comprobando si Docker y NVIDIA Container Toolkit están correctamente configurados..."
+	@echo "Checking if Docker and NVIDIA Container Toolkit are properly installed."
 	@docker run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi || \\
-		(echo "ERROR: No se detecta configuración correcta para GPUs en Docker. Verifica que tengas instalado nvidia-container-toolkit y que el daemon de Docker esté configurado." && exit 1)
+		(echo "ERROR: It seems that Docker or NVIDIA COntainer Toolkit are not properly installed." && exit 1)
