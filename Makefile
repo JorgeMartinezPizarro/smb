@@ -50,6 +50,9 @@ ifeq ($(COMPOSE_PROFILES),gpu)
       	-e MAX_PROMPT_LENGTH=${MAX_PROMPT_LENGTH} \
       	-e MAX_TOKENS=${MAX_TOKENS} \
       	-e GPU_LAYERS=${GPU_LAYERS} \
+		-e TOP_K=${TOP_K} \
+		-e TOP_P=${TOP_P} \
+		-e TEMPERATURE=${TEMPERATURE} \
 		-e GGML_CUDA=1 \
 		-e BATCH_SIZE=$(BATCH_SIZE) \
 		-e NUM_THREADS=$(NUM_THREADS) \

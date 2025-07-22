@@ -20,6 +20,9 @@ MAX_PROMPT_LENGTH = int(os.environ.get("MAX_PROMPT_LENGTH", 128))
 MAX_TOKENS = int(os.environ.get("MAX_TOKENS", 128)) 
 GPU_LAYERS = int(os.environ.get("GPU_LAYERS", 2)) 
 USE_GPU = os.environ.get("USE_GPU", "false").lower() == "true"
+TOP_K = int(os.environ.get("TOP_K", 25))
+TOP_P = float(os.environ.get("TOP_P", 0.5))
+TEMPERATURE = float(os.environ.get("TEMPERATURE", 0.2))
 
 def load_model():
 	global llm
@@ -68,10 +71,9 @@ def chat():
 			response = llm.create_chat_completion(
 				messages=messages,
 				max_tokens=MAX_TOKENS,
-				temperature = 0.6,
-				top_p = 0.9,
-				top_k = 50,
-				repeat_penalty = 1.05,
+				temperature = TEMPERATURE,
+				top_p = TOP_P,
+				top_k = TOP_K,
 			)
 		text = response["choices"][0]["message"]["content"]
 		logging.info(f"📤 Respuesta generada ({len(text)} chars)")

@@ -11,6 +11,9 @@ services:
       - MAX_TOKENS=${MAX_TOKENS}
       - GPU_LAYERS=${GPU_LAYERS}
       - LLM_REPO=${LLM_REPO}
+      - TOP_K=${TOP_K}
+      - TOP_P=${TOP_P}
+      - TEMPERATURE=${TEMPERATURE}
       - LLM_NAME=${LLM_NAME}
       - USE_GPU=false
       - BATCH_SIZE=${BATCH_SIZE}
