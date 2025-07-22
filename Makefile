@@ -80,23 +80,3 @@ test-gpu:
 	@echo "Comprobando si Docker y NVIDIA Container Toolkit están correctamente configurados..."
 	@docker run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi || \\
 		(echo "ERROR: No se detecta configuración correcta para GPUs en Docker. Verifica que tengas instalado nvidia-container-toolkit y que el daemon de Docker esté configurado." && exit 1)
-
-push:
-ifeq ($(COMPOSE_PROFILES),gpu)
-	docker push ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-gpu:${IMAGE_TAG}
-else
-	docker push ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-cpu:${IMAGE_TAG}
-endif
-	docker push ${REGISTRY_USER}/${REGISTRY_REPO}-mailer:${IMAGE_TAG}
-	docker push ${REGISTRY_USER}/${REGISTRY_REPO}-db:${IMAGE_TAG}
-	docker push ${REGISTRY_USER}/${REGISTRY_REPO}-orchestrator:${IMAGE_TAG}
-
-pull:
-ifeq ($(COMPOSE_PROFILES),gpu)
-	docker pull ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-gpu:${IMAGE_TAG}
-else
-	docker pull ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-cpu:${IMAGE_TAG}
-endif
-	docker pull ${REGISTRY_USER}/${REGISTRY_REPO}-mailer:${IMAGE_TAG}
-	docker pull ${REGISTRY_USER}/${REGISTRY_REPO}-db:${IMAGE_TAG}
-	docker pull ${REGISTRY_USER}/${REGISTRY_REPO}-orchestrator:${IMAGE_TAG}
