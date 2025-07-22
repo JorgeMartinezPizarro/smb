@@ -17,6 +17,7 @@ services:
       - LLM_NAME=${LLM_NAME}
       - USE_GPU=false
       - BATCH_SIZE=${BATCH_SIZE}
+      - REPETITION_PENALTY=${REPETITION_PENALTY}
       - NUM_THREADS=${NUM_THREADS}
     volumes:
       - ./cache/models:/app/models
@@ -66,6 +67,7 @@ services:
       - BOT_EMAIL=${MAIL_USER}
       - BOT_PASS=${MAIL_PASS}
       - SMTP_SERVER=${MAIL_HOST}
+      - PROMPT_FILE=${PROMPT_FILE}
     volumes:
       - ./cache/sqlite:/data
       - ./cache/vector_db:/app/vector_db

@@ -23,6 +23,7 @@ USE_GPU = os.environ.get("USE_GPU", "false").lower() == "true"
 TOP_K = int(os.environ.get("TOP_K", 25))
 TOP_P = float(os.environ.get("TOP_P", 0.5))
 TEMPERATURE = float(os.environ.get("TEMPERATURE", 0.2))
+REPETITION_PENALTY = float(os.environ.get("REPETITION_PENALTY", 1.15))
 
 def load_model():
 	global llm

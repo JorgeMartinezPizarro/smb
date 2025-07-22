@@ -8,7 +8,7 @@ app = Flask(__name__)
 # Configuración por variables de entorno
 DB_PATH = os.getenv("DB_PATH", "/data/db.sqlite")
 GPT_URL = os.getenv("GPT_URL", "http://gpt:5000/gpt")
-PROMPT_FILE = "assets/prompt.txt"
+PROMPT_FILE = "assets/" + os.environ.get("PROMPT_FILE", "xxx") + ".txt"
 SMTP_SERVER = os.getenv("SMTP_SERVER")
 BOT_EMAIL = os.getenv("BOT_EMAIL")
 BOT_PASS = os.getenv("BOT_PASS")
@@ -166,7 +166,7 @@ def process_email(sender, subject, body):
 
     # Obtén fragmentos relevantes del FAQ (top 5)
     faq_chunks = retriever.query(body, top_k=6)
-    logging.info(f"FAQs relevantes extraídas: {faq_chunks}")
+    #logging.info(f"FAQs relevantes extraídas: {faq_chunks}")
     context_text = "\n".join(faq_chunks)
     if not context_text.strip():
         context_text = "No hay información adicional disponible del FAQ."
@@ -181,7 +181,7 @@ def process_email(sender, subject, body):
                      .replace("{message}", body) \
                      .replace("{context}", context_text)
 
-    logging.info(f"Prompt generado para GPT ({len(prompt)} chars)")
+    logging.info(f"Prompt generado para GPT ({len(prompt)} chars) {prompt}")
 
     try:
         answer = ask_gpt_with_retry(prompt)
