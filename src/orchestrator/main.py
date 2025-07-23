@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import sqlite3, requests, smtplib, os, time, re, logging
 from email.message import EmailMessage
 import subprocess
+import markdown
 
 app = Flask(__name__)
 
@@ -69,23 +70,13 @@ def get_history_for_sender(sender, limit=3):
         """, (sender, limit))
         return cur.fetchall()
 
-def clean_redundancy(text):
-    # Elimina repeticiones 100% iguales seguidas (más de 2 veces)
-    lines = text.splitlines()
-    cleaned = []
-    for i, line in enumerate(lines):
-        if i >= 2 and line == lines[i-1] == lines[i-2]:
-            continue
-        cleaned.append(line)
-    return "\n".join(cleaned)
-
 def ask_gpt_with_retry(prompt, retries=10, delay=10):
     messages = [
         {"role": "user", "content": prompt}
     ]
     for i in range(retries):
         try:
-            response = requests.post(GPT_URL, json={"messages": messages}, timeout=240)
+            response = requests.post(GPT_URL, json={"messages": messages}, timeout=300)
             if response.status_code == 200:
                 data = response.json()
                 if "response" in data:
@@ -100,12 +91,17 @@ def ask_gpt_with_retry(prompt, retries=10, delay=10):
     raise Exception("No se pudo conectar con GPT después de varios intentos")
 
 def send_email(to, subject, body):
-    body = body.replace('\\n', '\n')  # <-- aquí la corrección
+    #html_body = markdown.markdown(body)
+    body = body.replace('\\n', '\n')
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = BOT_EMAIL
     msg["To"] = to
     msg.set_content(body)
+
+    #if html_body:
+        #msg.add_alternative(html_body, subtype='html')
+
     with smtplib.SMTP_SSL(SMTP_SERVER, 465) as smtp:
         smtp.login(BOT_EMAIL, BOT_PASS)
         smtp.send_message(msg)
@@ -128,18 +124,6 @@ def extract_name_from_message(message):
     logging.info("No se pudo extraer nombre del mensaje")
     return None
 
-# --- PROCESAMIENTO DE EMAIL ---
-
-def clean_gpt_response(text):
-    # Busca la línea con solo guiones (---)
-    parts = text.split('---', 1)
-    if len(parts) == 2:
-        # Devuelve lo que viene después del primer '---', recortando espacios
-        return parts[1].strip()
-    else:
-        # Si no hay '---', devuelve el texto tal cual
-        return text.strip()
-    
 from retriever import FAQRetriever
 
 # Carga global del retriever, solo una vez
@@ -181,14 +165,12 @@ def process_email(sender, subject, body):
                      .replace("{message}", body) \
                      .replace("{context}", context_text)
 
-    logging.info(f"Prompt generado para GPT ({len(prompt)} chars) {prompt}")
+    logging.info(f"Prompt generado para GPT ({len(prompt)} chars) \n\n{prompt}")
 
     try:
         answer = ask_gpt_with_retry(prompt)
-        answer = clean_redundancy(answer)
-        answer = clean_gpt_response(answer)
         
-        logging.info(f"Recibida respuesta de GPT\n")
+        logging.info(f"Recibida respuesta de GPT ({len(answer)} chars)\n")
     except Exception as e:
         logging.error(f"Error llamando a GPT: {e}")
         answer = ("Lo siento, hemos tenido un problema técnico y no puedo responder "

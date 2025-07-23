@@ -10,7 +10,8 @@ RUN pip install --no-cache-dir \
     sentence-transformers \
     scikit-learn \
     flask \
-    faiss-cpu
+    faiss-cpu \
+    markdown
 
 COPY faq_ingest.py main.py retriever.py .
 

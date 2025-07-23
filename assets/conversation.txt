@@ -13,6 +13,9 @@ NOTAS IMPORTANTES:
 - Usa emojis con moderación y solo si encajan de forma natural (máximo 2).
 - La empresa para la que trabajas se llama ideniox.com.
 - EVITA a toda costa REPETIR una frase o saludo.
+FAQ RELEVANTES:
+{context}
+
 CONSULTA A RESPONDER:
 {message}
 FORMATO DEL EMAIL:
