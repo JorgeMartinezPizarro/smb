@@ -27,6 +27,8 @@ Stores metrics and other useful information.
 
 ## 🚀 How to Run
 
+Get the sources:
+
 ```
 git clone https://github.com/JorgeMartinezPizarro/smb
 cd smb
@@ -35,10 +37,10 @@ cp .env.sample .env
 
 Write your own configuration [(See config examples)](docs/config.md).
 
-Finally
+Finally, compile and run:
 
 ```
-make up
+make build up
 ```
 
 After the system is load, SMB will automatically answer to the configured mail box.
