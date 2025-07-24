@@ -16,9 +16,8 @@ ifeq ($(COMPOSE_PROFILES),gpu)
 		--build-arg GGML_CUDA=1 \
 		-t $(REGISTRY_USER)/${REGISTRY_REPO}-gpt-gpu:${IMAGE_TAG} \
 		./src/gpt
-else
-	docker compose build
 endif
+	docker compose build
 
 push:
 ifeq ($(COMPOSE_PROFILES),gpu)
