@@ -2,12 +2,15 @@
 
 include .env
 
-## NOTE:
+#####################################################################
+#
+#  NOTE:
 #
 #  We use docker run cause docker compose still not support 100% GPU,
 #  it may be reviewed and fixed in the feature. For now it was 
 #  important to ensure that it works on Windows with the WSL.
 #
+#####################################################################
 
 build:
 ifeq ($(COMPOSE_PROFILES),gpu)
@@ -36,7 +39,7 @@ up:
 ifeq ($(COMPOSE_PROFILES),gpu)
 	docker run -d --gpus all \
 		--name gpt-gpu \
-		--network gpt-network \
+		--network ${PROJECT_NAME}-network \
 		--health-cmd="curl -f http://localhost:5000/health || exit 1" \
 		--health-interval=30s \
 		--health-retries=3 \

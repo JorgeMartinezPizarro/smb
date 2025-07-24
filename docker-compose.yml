@@ -75,4 +75,4 @@ services:
 
 networks:
   default:
-    name: gpt-network      
+    name: ${PROJECT_NAME}-network      
