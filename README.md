@@ -6,19 +6,19 @@ SMB is a modular AI-powered system to automate email support using local LLMs, s
 
 **Mailer**
 
-A dockerized mail client that search for new emails.
+A dockerized mail client looking for new emails.
 
 **GPT**
 
-A dockerized llama GGUF model to answer emails.
+A dockerized llama GGUF model to generate answers.
 
 **Orchestrator**
 
-A dockerized service that coordinate the workflow.
+A dockerized service that coordinates the workflow.
 
 **Database**
 
-Stores metrics and other information useful.
+Stores metrics and other useful information.
 
 ## ⚙️ Requirements
 
