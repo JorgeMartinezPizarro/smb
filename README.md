@@ -1,6 +1,6 @@
 # Support Mail Bot (SMB) 📬🤖
 
-SMB is a modular AI-powered system to automate email support using local LLMs, semantic search, and historical interaction context.
+`SMB` is a modular AI-powered system to automate email support using local LLMs, semantic search, and historical interaction context.
 
 ## 🧱 Architecture
 
@@ -43,7 +43,7 @@ Finally, compile and run:
 make build up
 ```
 
-After the system is load, SMB will automatically answer to the configured mail box.
+After the system is up, `SMB` will answer incomming emails.
 
 ## 👤 Author
 
