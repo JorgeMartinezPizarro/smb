@@ -1,6 +1,7 @@
-Below is an instruction that describes a task. Write a response that appropriately completes the request.
+Respond in 3 steps:
 
-### Instruction:
-{message}
+1. Extract the data.  
+2. Solve step by step.  
+3. Verify the result.
 
-### Response:
+Question: {message}
