@@ -26,7 +26,7 @@ A `python` service that coordinates the workflow.
 - Make
 - [Nvidia container toolkit] (optional, for GPU usage)
 
-## 📜 Get the sources
+## 💾 Download
 
 ```sh
 git clone https://github.com/JorgeMartinezPizarro/smb
@@ -63,15 +63,31 @@ IMAGE_TAG=first
 
 you can use `make push` and `make pull` to get your own compiled images.
 
-## ⚔️ How to Run
+## ⚔️ Install
 
-Compile the containers and run them:
+To create the containers
 
 ```sh
-make build up
+make build
+```
+
+## 🕹️ Run
+
+Finally, to start `SMB`:
+
+```sh
+make up
 ```
 
 After the system is up, `SMB` will answer incoming emails.
+
+Use
+
+```sh
+make logs
+```
+
+for further information.
 
 ## 🏛️ License
 
