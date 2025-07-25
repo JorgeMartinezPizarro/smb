@@ -47,7 +47,7 @@ Change `.env` according to your needs:
 
 - [More config examples](.env.sample).
 
-To check if you system can use `CUDA` acceleration, use:
+To check if you system can use `CUDA`, use:
 
 ```sh
 make test-gpu
