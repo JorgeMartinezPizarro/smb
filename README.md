@@ -30,7 +30,7 @@ A `python` service that coordinates the workflow.
 
 Get the sources:
 
-```
+```sh
 git clone https://github.com/JorgeMartinezPizarro/smb
 cd smb
 cp .env.sample .env
@@ -40,11 +40,27 @@ Write your own configuration:
 
 - [Config examples](docs/config.md).
 
-- [More config examples](.env.sample)
+- [More config examples](.env.sample).
+
+To check if you system can use `CUDA` acceleration, use:
+
+```sh
+make test-gpu
+```
+
+By setting up valid values for:
+
+```sh
+REGISTRY_USER=user
+REGISTRY_REPO=repo
+IMAGE_TAG=first
+```
+
+you can use make push and pull to get your own compiled images.
 
 Finally, compile and run:
 
-```
+```sh
 make build up
 ```
 
