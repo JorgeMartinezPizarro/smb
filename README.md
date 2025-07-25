@@ -4,26 +4,27 @@
 
 ## 🧱 Architecture
 
-**Mailer**
+*Mailer*
 
-A dockerized mail client looking for new emails.
+A `python` mail client looking for new emails.
 
-**GPT**
+*GPT*
 
-A dockerized llama GGUF model to generate answers.
+A `llama.cpp` service with a `GGUF` model.
 
-**Orchestrator**
+*Orchestrator*
 
-A dockerized service that coordinates the workflow.
+A `python` service that coordinates the workflow.
 
-**Database**
+*Database*
 
-Stores metrics and other useful information.
+`sqlite3` database to store metrics.
 
 ## ⚙️ Requirements
 
 - Docker
 - Make
+- [Nvidia container toolkit]
 
 ## 🚀 How to Run
 
@@ -35,7 +36,11 @@ cd smb
 cp .env.sample .env
 ```
 
-Write your own configuration [(See config examples)](docs/config.md).
+Write your own configuration:
+
+- [Config examples](docs/config.md).
+
+- [More config examples](.env.sample)
 
 Finally, compile and run:
 
@@ -45,14 +50,6 @@ make build up
 
 After the system is up, `SMB` will answer incomming emails.
 
-## 👤 Author
+## 👤 License
 
-Jorge Martínez Pizarro
-
-A mathematical programmer
-
-https://ideniox.com
-
-## 📜 License
-
-This product is licensed as a [haat](https://github.com/JorgeMartinezPizarro/haat/blob/main/LICENSE.md).
+This product is created by [Jorge Martinez Pizarro](https://ideniox.com) and licensed as a [haat](https://github.com/JorgeMartinezPizarro/haat/blob/main/LICENSE.md).
