@@ -78,5 +78,5 @@ logs:
 
 test-gpu:
 	@echo "Checking if Docker and NVIDIA Container Toolkit are properly installed."
-	@docker run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi || \\
+	@docker run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi || \
 		(echo "ERROR: It seems that Docker or NVIDIA Container Toolkit are not properly installed." && exit 1)
