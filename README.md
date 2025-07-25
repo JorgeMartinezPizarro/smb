@@ -24,7 +24,7 @@ A `python` service that coordinates the workflow.
 
 - Docker
 - Make
-- [Nvidia container toolkit]
+- [Nvidia container toolkit] (optional, for GPU usage)
 
 ## 📜 Get the sources
 
@@ -63,7 +63,7 @@ IMAGE_TAG=first
 
 you can use `make push` and `make pull` to get your own compiled images.
 
-## ▶️ How to Run
+## ⚔️ How to Run
 
 Compile the containers and run them:
 
@@ -71,8 +71,8 @@ Compile the containers and run them:
 make build up
 ```
 
-After the system is up, `SMB` will answer incomming emails.
+After the system is up, `SMB` will answer incoming emails.
 
-## 👤 License
+## 🏛️ License
 
 This product is created by [Jorge Martinez Pizarro](https://ideniox.com) and licensed as a [haat](https://github.com/JorgeMartinezPizarro/haat/blob/main/LICENSE.md).
