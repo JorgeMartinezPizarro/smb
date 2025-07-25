@@ -33,7 +33,7 @@ git clone https://github.com/JorgeMartinezPizarro/smb
 cd smb
 ```
 
-## ⚙️ Setup
+## ⚙️ Config
 
 To create your own configuration, use:
 
@@ -63,7 +63,7 @@ IMAGE_TAG=first
 
 you can use `make push` and `make pull` to get your own compiled images.
 
-## ⚔️ Install
+## 🏭 Build
 
 To create the containers
 
