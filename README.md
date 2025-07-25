@@ -20,23 +20,28 @@ A `python` service that coordinates the workflow.
 
 `sqlite3` database to store metrics.
 
-## ⚙️ Requirements
+## 🖥️ Requirements
 
 - Docker
 - Make
 - [Nvidia container toolkit]
 
-## 🚀 How to Run
-
-Get the sources:
+## 📜 Get the sources
 
 ```sh
 git clone https://github.com/JorgeMartinezPizarro/smb
 cd smb
+```
+
+## ⚙️ Setup
+
+To create your own configuration, use:
+
+```
 cp .env.sample .env
 ```
 
-Write your own configuration:
+Change `.env` according to your needs:
 
 - [Config examples](docs/config.md).
 
@@ -56,9 +61,11 @@ REGISTRY_REPO=repo
 IMAGE_TAG=first
 ```
 
-you can use make push and pull to get your own compiled images.
+you can use `make push` and `make pull` to get your own compiled images.
 
-Finally, compile and run:
+## ▶️ How to Run
+
+Compile the containers and run them:
 
 ```sh
 make build up
