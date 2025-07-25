@@ -59,7 +59,6 @@ ifeq ($(COMPOSE_PROFILES),gpu)
 		-e NUM_THREADS=$(NUM_THREADS) \
 		-v ./cache/models:/app/models \
 		-v ./cache/cache:/root/.cache/llama_cpp \
-		-p 5000:5000 \
 		$(REGISTRY_USER)/${REGISTRY_REPO}-gpt-gpu:${IMAGE_TAG}
 endif
 
