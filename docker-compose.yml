@@ -63,7 +63,7 @@ services:
       context: ./src/orchestrator
     environment:
       - DB_PATH=/data/db.sqlite
-      - GPT_URL=http://${GPT_SERVICE}:5000/gpt
+      - GPT_SERVICE=${GPT_SERVICE}
       - BOT_EMAIL=${MAIL_USER}
       - BOT_PASS=${MAIL_PASS}
       - SMTP_SERVER=${MAIL_HOST}

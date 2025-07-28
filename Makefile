@@ -35,10 +35,10 @@ endif
 	docker compose pull
 
 up:
-	docker compose up -d
+	docker compose -p $(PROJECT_NAME) up -d
 ifeq ($(COMPOSE_PROFILES),gpu)
 	docker run -d --gpus all \
-		--name gpt-gpu \
+		--name ${GPT_SERVICE} \
 		--network ${PROJECT_NAME}-network \
 		--health-cmd="curl -f http://localhost:5000/health || exit 1" \
 		--health-interval=30s \
@@ -63,15 +63,15 @@ ifeq ($(COMPOSE_PROFILES),gpu)
 endif
 
 down:
-	docker kill gpt-gpu 2>/dev/null || true
-	docker rm gpt-gpu 2>/dev/null || true
-	docker compose down --remove-orphans
+	docker kill ${GPT_SERVICE} 2>/dev/null || true
+	docker rm ${GPT_SERVICE} 2>/dev/null || true
+	docker compose -p $(PROJECT_NAME) down --remove-orphans
 	
 logs:
 	@bash -c '\
 		trap "kill 0" EXIT; \
-		docker compose logs -f & \
-		docker logs -f gpt-gpu 2>&1 | awk '\''{print "\033[35mgpt-gpu | \033[0m" $$0}'\'' & \
+		docker compose -p $(PROJECT_NAME) logs -f & \
+		docker logs -f ${GPT_SERVICE} 2>&1 | awk '\''{print "\033[35mgpt-gpu | \033[0m" $$0}'\'' & \
 		wait \
 	'
 
