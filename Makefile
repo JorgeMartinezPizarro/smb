@@ -7,7 +7,7 @@ include .env
 #  NOTE:
 #
 #  We use docker run cause docker compose still not support 100% GPU,
-#  it may be reviewed and fixed in the feature. For now it was 
+#  it will be reviewed and fixed in the future. For now it was 
 #  important to ensure that it works on Windows with the WSL.
 #
 #####################################################################
