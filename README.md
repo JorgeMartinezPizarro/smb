@@ -23,7 +23,7 @@ A `python` service that coordinates the workflow.
 ## 🖥️ Requirements
 
 - Docker
-- Make
+- GNU Make
 - [Nvidia container toolkit] (optional, for GPU usage)
 
 ## 💾 Download

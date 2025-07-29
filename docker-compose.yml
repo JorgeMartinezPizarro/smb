@@ -6,7 +6,6 @@ services:
       context: ./src/gpt
     environment:
       - NUM_THREADS=${NUM_THREADS}
-      - BATCH_SIZE=${BATCH_SIZE}
       - MAX_PROMPT_LENGTH=${MAX_PROMPT_LENGTH}
       - MAX_TOKENS=${MAX_TOKENS}
       - GPU_LAYERS=${GPU_LAYERS}
@@ -18,7 +17,6 @@ services:
       - USE_GPU=false
       - BATCH_SIZE=${BATCH_SIZE}
       - REPETITION_PENALTY=${REPETITION_PENALTY}
-      - NUM_THREADS=${NUM_THREADS}
     volumes:
       - ./cache/models:/app/models
       - ./cache/cache:/root/.cache/llama_cpp
@@ -28,18 +26,38 @@ services:
       timeout: 10s
       retries: 10
       start_period: 60s
-  # TODO: use it when docker compose is ready for it!
-  #
-  # gpt-gpu:
-  #   image: ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-gpu:${IMAGE_TAG}
-  #   profiles: ["gpu"]
-  #   runtime: nvidia
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - capabilities: [gpu]
-  #
+  gpt-gpu:
+    image: ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-gpu:${IMAGE_TAG}
+    build:
+      context: ./src/gpt
+    profiles: ["gpu"]
+    environment:
+      LLM_REPO: ${LLM_REPO}
+      LLM_NAME: ${LLM_NAME}
+      USE_GPU: "true"
+      USE_CUDA: "cuda"
+      MAX_PROMPT_LENGTH: ${MAX_PROMPT_LENGTH}
+      MAX_TOKENS: ${MAX_TOKENS}
+      GPU_LAYERS: ${GPU_LAYERS}
+      TOP_K: ${TOP_K}
+      TOP_P: ${TOP_P}
+      TEMPERATURE: ${TEMPERATURE}
+      REPETITION_PENALTY: ${REPETITION_PENALTY}
+      GGML_CUDA: "1"
+      BATCH_SIZE: ${BATCH_SIZE}
+      NUM_THREADS: ${NUM_THREADS}
+    volumes:
+      - ./cache/models:/app/models
+      - ./cache/cache:/root/.cache/llama_cpp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      retries: 3
+    device_requests:
+      - driver: nvidia
+        count: all
+        capabilities: [gpu]
+    restart: unless-stopped
   mailer:
     image: ${REGISTRY_USER}/${REGISTRY_REPO}-mailer:${IMAGE_TAG}
     build:
