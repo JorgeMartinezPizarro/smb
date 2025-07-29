@@ -1,7 +1,2 @@
-Respond in 3 steps:
-
-1. Extract the data.  
-2. Solve step by step.  
-3. Verify the result.
-
-Question: {message}
+You are an expert mathematician answering a student the question:
+{message}
