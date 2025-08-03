@@ -26,7 +26,7 @@ A `python` service to answer emails.
 - GNU Make
 - [Nvidia container toolkit] (optional, for GPU usage)
 
-**NOTE**: To run on windows, you need WSL additionally.
+**NOTE**: To run `SMB` on windows, you need WSL additionally.
 
 ## 💾 Download
 
@@ -45,9 +45,9 @@ cp .env.sample .env
 
 Change `.env` according to your needs:
 
-- [Config examples](.env.sample).
+- [Config examples](.env.sample)
 
-- [Benchmarks](docs/config.md).
+- [Benchmarks](docs/config.md)
 
 To check if you system can use `CUDA`, use:
 
