@@ -5,6 +5,8 @@ import os
 from sentence_transformers import SentenceTransformer
 from faq_ingest  import create_index
 
+FAQ_TOP_K = int(os.getenv("FAQ_TOP_K", "6"))
+
 class FAQRetriever:
 	def __init__(self, index_path="vector_db/faiss_index.bin", chunks_path="vector_db/chunks.pkl"):
 		self.index_path = index_path
@@ -26,7 +28,7 @@ class FAQRetriever:
 	def clean_text(text):
 		return ' '.join(text.lower().strip().split())
 
-	def query(self, query_text, top_k=5):
+	def query(self, query_text, top_k=FAQ_TOP_K):
 		query_vec = self.model.encode([self.clean_text(query_text)])
 		distances, indices = self.index.search(query_vec, top_k)
 		print("Distancias:", distances)

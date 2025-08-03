@@ -1,32 +1,309 @@
-1. ¿Cuál es el horario de atención al cliente?
-Nuestro horario es de lunes a viernes, de 9:00 a 17:00 horas, durante el cual estaremos encantados de ayudarte con cualquier consulta.
+Pedidos y Compras
+¿Cómo puedo hacer un pedido?
+Simplemente navega por nuestra web, selecciona los productos, añádelos al carrito y sigue el proceso de pago seguro.
 
-2. ¿Puedo devolver un producto si no me gusta?
-No se admiten devoluciones, por lo que te recomendamos revisar bien los detalles del producto antes de comprar.
+¿Puedo modificar o cancelar un pedido una vez realizado?
+Sí, sólo durante la primera hora después de confirmar el pedido. Contacta al soporte con tu número de orden para gestionarlo.
 
-3. ¿Cuánto tiempo tarda el envío?
-Los envíos tardan un mínimo de 14 días naturales. En casos excepcionales, podrían demorarse un poco más, y te avisaremos si eso ocurre.
+¿Cuáles son los métodos de pago aceptados?
+Aceptamos tarjetas de crédito/débito, PayPal, Apple Pay, Google Pay y transferencias bancarias.
 
-4. ¿Cómo puedo hacer seguimiento a mi pedido?
-Una vez enviado, recibirás un correo con el número de seguimiento para que puedas consultar el estado en tiempo real.
+¿Se puede pagar contra reembolso?
+No, actualmente no ofrecemos pago contra reembolso.
 
-5. ¿Qué métodos de pago aceptan?
-Aceptamos pagos con tarjeta de crédito, débito y transferencias bancarias seguras.
+¿Cómo sé si mi pedido fue confirmado?
+Te enviamos un correo electrónico de confirmación con el número de pedido inmediatamente después de completar la compra.
 
-6. ¿Puedo cambiar la dirección de envío después de hacer el pedido?
-Si necesitas modificar la dirección, contacta con nosotros lo antes posible. Intentaremos ayudarte, aunque no siempre es posible cambiarlo una vez procesado el envío.
+¿Puedo comprar productos como invitado sin crear una cuenta?
+Sí, ofrecemos la opción de compra como invitado, aunque recomendamos crear cuenta para seguimiento y promociones.
 
-7. ¿Ofrecen garantía en los productos?
-Sí, todos nuestros productos cuentan con garantía según la legislación vigente, para tu tranquilidad y confianza.
+¿Se aplican impuestos y tasas adicionales?
+Los precios incluyen IVA. Para envíos internacionales, podrían aplicarse aranceles locales que no cubre la tienda.
 
-8. ¿Qué hago si recibo un producto defectuoso?
-Si detectas algún problema con tu pedido, por favor contáctanos inmediatamente para buscar la mejor solución.
+¿Puedo hacer pedidos para regalo?
+Sí, durante la compra puedes seleccionar la opción “Es un regalo” y agregar una nota personalizada.
 
-9. ¿Realizan envíos internacionales?
-Actualmente solo realizamos envíos dentro del territorio nacional.
+¿Hay descuentos por comprar en grandes cantidades?
+Sí, ofrecemos descuentos para compras al por mayor. Contacta con nuestro departamento de ventas para más información.
 
-10. ¿Puedo contactar con atención al cliente por teléfono?
-Por el momento, ofrecemos atención vía email y formulario web para asegurar una respuesta rápida y eficiente.
+¿Qué hago si un producto está agotado?
+Puedes solicitar una notificación cuando el producto vuelva a estar disponible o buscar alternativas similares.
 
-11. De que se alimenta la ballena azul?
-La ballena azul se alimenta casi en exclusividad de krill marino, ingiriendo toneladas de estos minisculos animales por dia.
+Envíos y Entregas
+¿Cuáles son los tiempos estimados de entrega?
+Normalmente de 3 a 7 días hábiles para envíos nacionales. Los envíos internacionales pueden tardar de 7 a 20 días.
+
+¿Cuánto cuesta el envío?
+Ofrecemos envío gratuito en pedidos superiores a 50€. Para pedidos menores, la tarifa es de 4.99€.
+
+¿Puedo hacer seguimiento de mi pedido?
+Sí, al enviar el pedido te proporcionamos un código de seguimiento con enlace a la empresa de transporte.
+
+¿Qué sucede si no estoy en casa cuando entregan mi pedido?
+El transportista dejará un aviso para reprogramar la entrega o recoger el paquete en un punto cercano.
+
+¿Pueden entregar en una dirección diferente a la de facturación?
+Sí, durante el proceso de compra puedes especificar una dirección de envío distinta.
+
+¿Hacen envíos internacionales?
+Sí, realizamos envíos a la mayoría de países. Los costes y tiempos varían según destino.
+
+¿Qué hago si mi pedido llega dañado?
+Contacta con soporte en las primeras 48 horas con fotos del paquete y contenido para gestionar una devolución o reemplazo.
+
+¿Puedo recoger mi pedido en tienda física?
+Actualmente no contamos con tiendas físicas, sólo ventas online.
+
+¿Pueden entregarme en días festivos o fines de semana?
+Por norma general no, pero en fechas especiales ofrecemos entregas programadas con recargo.
+
+¿Cómo cambio la dirección de envío después de hacer el pedido?
+Sólo durante la primera hora puedes modificarla contactando soporte. Luego no es posible.
+
+Devoluciones y Reembolsos
+¿Cuál es la política de devoluciones?
+Aceptamos devoluciones dentro de 30 días naturales desde la entrega, siempre que el producto esté en su estado original y sin uso.
+
+¿Quién paga el coste de la devolución?
+Si la devolución es por error nuestro o producto defectuoso, nosotros cubrimos el coste. En devoluciones por cambio de opinión, corre por cuenta del cliente.
+
+¿Cuánto tarda en procesarse un reembolso?
+Una vez recibimos y verificamos el producto devuelto, el reembolso se realiza en 5-7 días hábiles.
+
+¿Puedo cambiar un producto por otro directamente?
+No ofrecemos cambio directo; debe hacer una devolución y luego un nuevo pedido.
+
+¿Qué hago si recibo un producto incorrecto?
+Contacta con soporte con fotos y descripción, y gestionaremos un reemplazo o devolución sin coste.
+
+¿Puedo devolver productos de electrónica y tecnología?
+Sí, siempre que estén sin usar, en embalaje original y sin daños.
+
+¿Qué productos no admiten devolución?
+Productos personalizados, software descargable y algunos productos de higiene no admiten devolución.
+
+¿Puedo devolver un producto comprado en oferta?
+Sí, la política de devoluciones aplica igual para productos en oferta o promoción.
+
+¿Qué documentación necesito para devolver un producto?
+El número de pedido y el formulario de devolución que te enviamos al solicitarla.
+
+¿Puedo devolver un producto en tienda?
+No, solo gestionamos devoluciones por envío postal.
+
+Cuenta y Seguridad
+¿Cómo creo una cuenta?
+En la página principal selecciona “Crear cuenta”, introduce tus datos y valida el correo electrónico.
+
+¿Qué hago si olvidé mi contraseña?
+En la página de inicio de sesión hay un enlace “¿Olvidaste tu contraseña?” para restablecerla por correo.
+
+¿Puedo eliminar mi cuenta?
+Sí, contacta con soporte para solicitar la eliminación permanente de tus datos.
+
+¿Mis datos personales están seguros?
+Usamos protocolos de seguridad SSL, cifrado y cumpliendo con GDPR para proteger tu información.
+
+¿Puedo cambiar mi correo electrónico asociado a la cuenta?
+Sí, en “Configuración” puedes actualizar tu correo y verificarlo.
+
+¿Qué hago si detecto actividad sospechosa en mi cuenta?
+Contacta de inmediato con soporte para bloquear la cuenta y prevenir fraudes.
+
+¿La tienda comparte mis datos con terceros?
+No compartimos tus datos personales con terceros sin tu consentimiento explícito.
+
+¿Puedo recibir promociones y newsletters?
+Sí, puedes suscribirte o darte de baja en cualquier momento desde tu perfil.
+
+¿Qué hago si recibo correos sospechosos supuestamente de la tienda?
+No hagas clic en enlaces y contacta con soporte para verificar su autenticidad.
+
+¿Cómo activo la autenticación en dos pasos?
+Próximamente añadiremos esta opción para mejorar la seguridad de la cuenta.
+
+Productos y Garantías
+¿Los productos tienen garantía?
+Sí, todos nuestros productos cuentan con garantía mínima de 2 años según normativa.
+
+¿Cómo tramito una reclamación por garantía?
+Contacta con soporte con tu factura y descripción del problema para iniciar el proceso.
+
+¿Qué hago si un producto está defectuoso?
+Informa al soporte en las primeras 48 horas con fotos y detalles para gestionar reparación o reemplazo.
+
+¿Puedo solicitar factura para empresa?
+Sí, durante la compra selecciona la opción para emitir factura con datos fiscales.
+
+¿Cómo saber si un producto está en stock?
+La web muestra la disponibilidad en tiempo real en la ficha del producto.
+
+¿Pueden reservar productos agotados?
+No, no hacemos reservas. Puedes solicitar aviso cuando haya reposición.
+
+¿Hay garantía en productos reacondicionados?
+Sí, con condiciones especiales que se detallan en la ficha de cada producto.
+
+¿Puedo solicitar productos personalizados?
+No ofrecemos personalización en este momento.
+
+¿Cómo puedo dejar una reseña de un producto?
+Tras comprar, puedes valorar y dejar comentarios en la ficha del producto.
+
+¿Qué hago si mi producto no coincide con la descripción?
+Contacta con soporte para analizar el caso y gestionar devolución o compensación.
+
+Promociones y Descuentos
+¿Cómo puedo usar un cupón de descuento?
+Introduce el código promocional en el campo “Código descuento” durante el proceso de pago.
+
+¿Los cupones tienen fecha de caducidad?
+Sí, cada cupón indica su fecha de vencimiento en las condiciones de la promoción.
+
+¿Puedo usar varios cupones en una misma compra?
+No, sólo puedes aplicar un cupón por pedido.
+
+¿Qué hago si mi cupón no funciona?
+Revisa las condiciones de uso y la validez. Si el problema persiste, contacta con soporte.
+
+¿Existen descuentos para estudiantes o personas mayores?
+Sí, ofrecemos descuentos especiales presentando acreditación válida.
+
+¿Las promociones aplican en todos los productos?
+No, algunas promociones excluyen ciertos productos o categorías.
+
+¿Puedo obtener descuentos por recomendar a un amigo?
+Sí, tenemos un programa de referidos con beneficios para ambos.
+
+¿Hay promociones especiales en fechas señaladas?
+Sí, en Black Friday, Navidad y otras fechas lanzamos ofertas exclusivas.
+
+¿Cómo me entero de las promociones actuales?
+Suscríbete a nuestro boletín o consulta la sección “Ofertas” en la web.
+
+¿Los precios indicados incluyen ya el descuento?
+Sí, el precio visible refleja el descuento aplicado.
+
+Programas de Fidelización
+¿La tienda tiene programa de puntos o recompensas?
+Sí, acumulas puntos con cada compra que puedes canjear por descuentos.
+
+¿Cómo puedo consultar mis puntos acumulados?
+En tu perfil de usuario, sección “Programa de fidelización”.
+
+¿Los puntos caducan?
+Sí, tienen una validez de 12 meses desde su acumulación.
+
+¿Puedo transferir puntos a otra cuenta?
+No, los puntos son personales e intransferibles.
+
+¿Los puntos se aplican en todas las compras?
+Sí, salvo en productos en promoción o con descuento especial.
+
+¿Puedo usar puntos y cupón en la misma compra?
+Sí, pero sólo un cupón puede aplicarse.
+
+¿Qué pasa si devuelvo un producto comprado con puntos?
+Los puntos usados se reembolsan a tu cuenta tras la devolución.
+
+¿Cómo puedo aumentar mis puntos más rápido?
+Participa en promociones especiales y compra productos destacados.
+
+¿Hay niveles dentro del programa de fidelización?
+Sí, niveles Plata, Oro y Platino con beneficios crecientes.
+
+¿Qué beneficios tienen los niveles superiores?
+Envío gratuito, acceso anticipado a promociones y atención personalizada.
+
+Atención al Cliente
+¿Cómo contacto con soporte?
+Puedes escribirnos por chat en vivo, correo electrónico o teléfono durante horario laboral.
+
+¿Cuál es el horario de atención?
+De lunes a viernes, 9:00 a 19:00, y sábados de 10:00 a 14:00.
+
+¿Ofrecen soporte en otros idiomas?
+Sí, soporte en español e inglés.
+
+¿Cuánto tiempo tardan en responder a una consulta?
+En general, menos de 24 horas hábiles.
+
+¿Puedo enviar documentos o fotos para soporte?
+Sí, nuestro sistema permite adjuntar archivos para facilitar la ayuda.
+
+¿Hay soporte telefónico?
+Sí, llama al 900-123-456 para asistencia directa.
+
+¿Cómo hago seguimiento a una incidencia abierta?
+Puedes revisar el estado en tu perfil o contactando soporte con tu número de caso.
+
+¿Ofrecen soporte para productos técnicos o electrónicos?
+Sí, contamos con especialistas para asistencia técnica.
+
+¿Puedo solicitar devolución o reparación a través del soporte?
+Sí, el equipo te guiará paso a paso para tramitarlo.
+
+¿Qué hago si estoy insatisfecho con la atención recibida?
+Contacta con nuestro responsable de atención al cliente para resolver la situación.
+
+Seguridad y Privacidad
+¿Cómo protege la tienda mi información personal?
+Utilizamos cifrado SSL y protocolos seguros para todos los datos sensibles.
+
+¿Cumplen con el GDPR y otras normativas?
+Sí, estamos completamente alineados con las leyes de protección de datos vigentes.
+
+¿Puedo solicitar una copia de mis datos personales?
+Sí, mediante formulario en la web o solicitándolo a soporte.
+
+¿Cómo puedo rectificar datos incorrectos?
+Desde tu perfil o contactando con soporte para actualizaciones.
+
+¿Qué pasa con mis datos si elimino mi cuenta?
+Se borran de manera definitiva salvo obligaciones legales de conservación.
+
+¿La tienda utiliza cookies?
+Sí, para mejorar la experiencia y funcionalidad de la web.
+
+¿Puedo configurar mis preferencias de cookies?
+Sí, al entrar a la web puedes gestionar qué tipos aceptar.
+
+¿Se usan mis datos para publicidad personalizada?
+Sólo si das tu consentimiento explícito en configuración.
+
+¿Con quién comparte la tienda mis datos?
+Únicamente con socios de logística y pago para procesar pedidos.
+
+¿Cómo reporto un incidente de seguridad?
+Contacta inmediatamente a seguridad@shop.ideniox.com con detalles.
+
+Uso de la Web y App
+¿Puedo acceder a la tienda desde el móvil?
+Sí, tenemos una app móvil y la web es responsive.
+
+¿Qué hago si no puedo iniciar sesión?
+Usa “Olvidé mi contraseña” o contacta soporte.
+
+¿Cómo actualizo mis datos personales?
+En tu perfil, sección “Mi cuenta”.
+
+¿Cómo gestiono mis direcciones de envío?
+Puedes añadir, editar o eliminar direcciones desde tu perfil.
+
+¿Puedo guardar productos en una lista de deseos?
+Sí, para comprar luego o compartir con amigos.
+
+¿Qué hago si un producto desaparece de mi carrito?
+Puede ser por expiración de sesión o falta de stock, revisa disponibilidad.
+
+¿Puedo comparar productos dentro de la web?
+Sí, selecciona los productos y usa la función de comparación.
+
+¿Cómo cambio la configuración de notificaciones?
+Desde “Preferencias” en tu perfil puedes activar o desactivar alertas.
+
+¿La tienda ofrece accesibilidad para personas con discapacidad?
+Sí, seguimos estándares WCAG para una experiencia inclusiva.
+
+¿Dónde puedo encontrar los términos y condiciones?
+En el pie de página, enlace “Términos y Condiciones”.

@@ -12,11 +12,14 @@ import numpy as np
 app = Flask(__name__)
 
 # --- CONFIGURACIÓN NUMÉRICA ---
-MAX_WORDS = int(os.getenv("MAX_WORDS", "250"))        # palabras por chunk Wikipedia
-OVERLAP = int(os.getenv("OVERLAP", "50"))             # solapamiento entre chunks
-TOP_K = int(os.getenv("TOP_K", "100"))                 # nº de chunks a recuperar de Wikipedia
-MAX_CHARS = int(os.getenv("MAX_CHARS", "30000"))       # máximo chars para prompt Wikipedia
-WIKIPEDIA_MAX_CHARS = int(os.getenv("WIKIPEDIA_MAX_CHARS", "50000"))  # máximo chars a descargar Wikipedia
+WIKIPEDIA_MAX_WORDS = int(os.getenv("WIKIPEDIA_MAX_WORDS", "250"))        # palabras por chunk Wikipedia
+WIKIPEDIA_OVERLAP = int(os.getenv("WIKIPEDIA_OVERLAP", "50"))             # solapamiento entre chunks
+WIKIPEDIA_TOP_K = int(os.getenv("WIKIPEDIA_TOP_K", "100"))                 # nº de chunks a recuperar de Wikipedia
+WIKIPEDIA_MAX_CHARS = int(os.getenv("WIKIPEDIA_MAX_CHARS", "30000"))       # máximo chars para prompt Wikipedia
+WIKIPEDIA_READ_CHARS = int(os.getenv("WIKIPEDIA_READ_CHARS", "50000"))  # máximo chars a descargar Wikipedia
+
+HISTORY_SIZE = int(os.getenv("WIKIPEDIA_READ_CHARS", 8))
+FAQ_TOP_K = int(os.getenv("WIKIPEDIA_READ_CHARS", 6))
 
 # --- RUTAS Y VARIABLES ---
 INDEX_PATH = "vector_db/faiss_index.bin"
@@ -82,7 +85,7 @@ def get_history_for_sender(sender, limit=3):
         """, (sender, limit))
         return cur.fetchall()
 
-def ask_gpt_with_retry(prompt, retries=10, delay=10):
+def ask_gpt_with_retry(prompt, retries=8, delay=2):
     messages = [
         {"role": "user", "content": prompt}
     ]
@@ -179,7 +182,7 @@ def get_wikipedia_page(subject, lang="es"):
         return None
     return page
 
-def get_relevant_wikipedia_chunks(subject, body, lang="es", max_chars=MAX_CHARS, top_k=TOP_K):
+def get_relevant_wikipedia_chunks(subject, body, lang="es", WIKIPEDIA_MAX_CHARS=WIKIPEDIA_MAX_CHARS, top_k=WIKIPEDIA_TOP_K):
     query = subject.strip() if subject and subject.strip() else body.strip()
     page = get_wikipedia_page(query, lang=lang)
     if not page or not page.exists():
@@ -187,7 +190,7 @@ def get_relevant_wikipedia_chunks(subject, body, lang="es", max_chars=MAX_CHARS,
         return f"No se encontró información relevante sobre '{query}' en Wikipedia."
 
     # Tomamos resumen + texto, limitados inicialmente
-    full_text = (page.summary + "\n\n" + page.text)[:WIKIPEDIA_MAX_CHARS]
+    full_text = (page.summary + "\n\n" + page.text)[:WIKIPEDIA_READ_CHARS]
 
     # Chunkificar con solapamiento
     chunks = chunk_text_with_overlap(full_text)
@@ -212,7 +215,7 @@ def get_relevant_wikipedia_chunks(subject, body, lang="es", max_chars=MAX_CHARS,
     for idx in indices[0]:
         if idx < len(chunks):
             chunk_text = chunks[idx]
-            if total_chars + len(chunk_text) > max_chars:
+            if total_chars + len(chunk_text) > WIKIPEDIA_MAX_CHARS:
                 break
             selected_chunks.append(chunk_text)
             total_chars += len(chunk_text)
@@ -236,7 +239,7 @@ def process_email(sender, subject, body):
     if not name:
         name = "cliente"  # fallback
 
-    history_entries = get_history_for_sender(sender, limit=5)
+    history_entries = get_history_for_sender(sender, limit=HISTORY_SIZE)
     if history_entries:
         history_text = "\n".join(
             f"Cliente: {q}\nBot: {r}" for q, r in reversed(history_entries)
@@ -244,14 +247,14 @@ def process_email(sender, subject, body):
     else:
         history_text = "Este es el primer mensaje del cliente."
 
-    # Obtén fragmentos relevantes del FAQ (top 6)
-    faq_chunks = retriever.query(body, top_k=6)
+    
+    faq_chunks = retriever.query(body, top_k=FAQ_TOP_K)
     context_text = "\n".join(faq_chunks)
     if not context_text.strip():
         context_text = "No hay información adicional disponible del FAQ."
 
     # Obtén fragmentos relevantes directamente de Wikipedia
-    wikipedia_context = get_relevant_wikipedia_chunks(subject, body, lang="es", max_chars=WIKIPEDIA_MAX_CHARS, top_k=TOP_K)
+    wikipedia_context = get_relevant_wikipedia_chunks(subject, body, lang="es", WIKIPEDIA_MAX_CHARS=WIKIPEDIA_READ_CHARS, top_k=WIKIPEDIA_TOP_K)
 
     # Carga la plantilla
     with open(PROMPT_FILE, encoding="utf-8") as f:

@@ -6,6 +6,8 @@ from pathlib import Path
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
+FAQ_CHUNK_SIZE = int(os.getenv("FAQ_CHUNK_SIZE", "40"))
+
 def normalize_embeddings(embeddings: np.ndarray) -> np.ndarray:
     norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
     return embeddings / (norms + 1e-10)
@@ -27,7 +29,7 @@ def create_index(
 
         # Divide por preguntas que empiezan con número y punto
         chunks = re.split(r'\n(?=\d+\.)', text)
-        chunks = [chunk.replace('\n', ' ').strip() for chunk in chunks if len(chunk.strip()) > 30]
+        chunks = [chunk.replace('\n', ' ').strip() for chunk in chunks if len(chunk.strip()) > FAQ_CHUNK_SIZE]
 
         if not chunks:
             raise ValueError("[ERROR] El archivo FAQ está vacío o mal formateado.")
