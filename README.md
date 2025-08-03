@@ -1,4 +1,4 @@
-# Support Mail Bot (SMB) 📬🤖
+# Support Mail Bot (SMB) 🍄📬🤖
 
 `SMB` is a modular AI-powered system to automate email support using local LLMs, semantic search, and historical interaction context.
 
@@ -14,7 +14,7 @@ A `llama.cpp` service with a `GGUF` model.
 
 ### Orchestrator
 
-A `python` service that coordinates the workflow.
+A `python` service to answer emails.
 
 ### Database
 
@@ -43,9 +43,9 @@ cp .env.sample .env
 
 Change `.env` according to your needs:
 
-- [Config examples](docs/config.md).
+- [Config examples](.env.sample).
 
-- [More config examples](.env.sample).
+- [Benchmarks](docs/config.md).
 
 To check if you system can use `CUDA`, use:
 
