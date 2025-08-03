@@ -12,7 +12,7 @@ import numpy as np
 app = Flask(__name__)
 
 # --- CONFIGURACIÓN NUMÉRICA ---
-WIKIPEDIA_MAX_WORDS = int(os.getenv("WIKIPEDIA_MAX_WORDS", "250"))        # palabras por chunk Wikipedia
+WIKIPEDIA_CHUNK_SIZE = int(os.getenv("WIKIPEDIA_CHUNK_SIZE", "250"))        # palabras por chunk Wikipedia
 WIKIPEDIA_OVERLAP = int(os.getenv("WIKIPEDIA_OVERLAP", "50"))             # solapamiento entre chunks
 WIKIPEDIA_TOP_K = int(os.getenv("WIKIPEDIA_TOP_K", "100"))                 # nº de chunks a recuperar de Wikipedia
 WIKIPEDIA_MAX_CHARS = int(os.getenv("WIKIPEDIA_MAX_CHARS", "30000"))       # máximo chars para prompt Wikipedia
@@ -135,7 +135,7 @@ def extract_name_from_message(message):
     logging.info("No se pudo extraer nombre del mensaje")
     return None
 
-def chunk_text_with_overlap(text, max_words=MAX_WORDS, overlap=OVERLAP):
+def chunk_text_with_overlap(text, max_words=WIKIPEDIA_CHUNK_SIZE, overlap=OVERLAP):
     words = text.split()
     chunks = []
     start = 0
