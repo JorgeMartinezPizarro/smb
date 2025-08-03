@@ -94,8 +94,6 @@ services:
       - WIKIPEDIA_MAX_CHARS=${WIKIPEDIA_MAX_CHARS}
       - WIKIPEDIA_CHUNK_SIZE=${WIKIPEDIA_CHUNK_SIZE}
       - MAIL_HISTORY_SIZE=${MAIL_HISTORY_SIZE}
-      - FAQ_TOP_K=${FAQ_TOP_K}
-      - FAQ_CHUNK_SIZE=${FAQ_CHUNK_SIZE}
       - PROMPT_FILE=${PROMPT_FILE}
     volumes:
       - ./cache/sqlite:/data

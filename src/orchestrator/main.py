@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify
 import sqlite3, requests, smtplib, os, time, re, logging
-from retriever import FAQRetriever
 from email.message import EmailMessage
 import subprocess
 import markdown
@@ -19,7 +18,6 @@ WIKIPEDIA_MAX_CHARS = int(os.getenv("WIKIPEDIA_MAX_CHARS", "30000"))       # má
 WIKIPEDIA_READ_CHARS = int(os.getenv("WIKIPEDIA_READ_CHARS", "50000"))  # máximo chars a descargar Wikipedia
 
 MAIL_HISTORY_SIZE = int(os.getenv("MAIL_HISTORY_SIZE", 8))
-FAQ_TOP_K = int(os.getenv("FAQ_TOP_K", 6))
 
 # --- RUTAS Y VARIABLES ---
 INDEX_PATH = "vector_db/faiss_index.bin"
@@ -31,14 +29,6 @@ SMTP_SERVER = os.getenv("SMTP_SERVER")
 BOT_EMAIL = os.getenv("BOT_EMAIL")
 BOT_PASS = os.getenv("BOT_PASS")
 
-
-def check_and_build_index():
-	if not os.path.isfile(INDEX_PATH):
-		print("[INFO] Índice FAISS no encontrado, generando nuevo índice...")
-		subprocess.run(["python3", "faq_ingest.py"], check=True)
-		print("[INFO] Índice generado correctamente.")
-	else:
-		print("[INFO] Índice FAISS ya existe, cargando directamente.")
 
 # Logging básico
 logging.basicConfig(level=logging.INFO)
@@ -225,9 +215,6 @@ def get_relevant_wikipedia_chunks(subject, body, lang="es", WIKIPEDIA_MAX_CHARS=
 
 	return "\n\n".join(selected_chunks)
 
-# Carga global del retriever FAQ, solo una vez
-retriever = FAQRetriever(INDEX_PATH)
-
 def process_email(sender, subject, body):
 	logging.info(f"Procesando email de {sender} con asunto '{subject}'")
 	name = get_user_name(sender)
@@ -248,10 +235,9 @@ def process_email(sender, subject, body):
 		history_text = "Este es el primer mensaje del cliente."
 
 	
-	faq_chunks = retriever.query(body, top_k=FAQ_TOP_K)
-	context_text = "\n".join(faq_chunks)
-	if not context_text.strip():
-		context_text = "No hay información adicional disponible del FAQ."
+	
+	with open("assets/faq.txt", encoding="utf-8") as f:
+		context_text = f.read()
 
 	# Obtén fragmentos relevantes directamente de Wikipedia
 	if subject != "Duda":
@@ -312,5 +298,4 @@ def api_process_email():
 # --- MAIN ---
 
 if __name__ == "__main__":
-	check_and_build_index()
 	app.run(host="0.0.0.0", port=5000)
