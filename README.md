@@ -26,6 +26,8 @@ A `python` service to answer emails.
 - GNU Make
 - [Nvidia container toolkit] (optional, for GPU usage)
 
+**NOTE**: To run in windows, you need to install WSL.
+
 ## 💾 Download
 
 ```sh
