@@ -4,19 +4,19 @@
 
 ## 🧱 Architecture
 
-*Mailer*
+### Mailer
 
 A `python` mail client looking for new emails.
 
-*GPT*
+### GPT
 
 A `llama.cpp` service with a `GGUF` model.
 
-*Orchestrator*
+### Orchestrator
 
 A `python` service that coordinates the workflow.
 
-*Database*
+### Database
 
 `sqlite3` database to store metrics.
 
@@ -33,7 +33,7 @@ git clone https://github.com/JorgeMartinezPizarro/smb
 cd smb
 ```
 
-## ⚙️ Config
+## ✏️ Config
 
 To create your own configuration, use:
 
