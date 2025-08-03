@@ -1,4 +1,6 @@
-import imaplib, email, os
+import imaplib
+import email
+import os
 import time
 import requests
 import ssl
@@ -11,8 +13,21 @@ ORCHESTRATOR_URL = os.getenv("ORCHESTRATOR_URL", "http://orchestrator:5000/proce
 MAX_RETRIES = 5
 RETRY_INTERVAL = 10
 
+
 def log(msg):
     print(f"[MAILER] {msg}", flush=True)
+
+
+def safe_decode(payload):
+    """Convierte cualquier payload a str de forma segura."""
+    if payload is None:
+        return ""
+    if isinstance(payload, bytes):
+        return payload.decode(errors="ignore")
+    if isinstance(payload, str):
+        return payload
+    return str(payload)
+
 
 def connect_imap():
     retries = 0
@@ -37,45 +52,75 @@ def connect_imap():
         log(f"🔁 Reintentando en {RETRY_INTERVAL} segundos...")
         time.sleep(RETRY_INTERVAL)
 
-def fetch_one_unseen_email(mail):
+
+def ensure_connection(mail):
+    """Verifica si la conexión IMAP sigue viva."""
     try:
+        status, _ = mail.noop()
+        if status != "OK":
+            raise imaplib.IMAP4.abort("No se obtuvo OK en NOOP")
+    except imaplib.IMAP4.abort:
+        raise
+    except Exception as e:
+        log(f"⚠️ Error en noop(): {e}")
+        raise imaplib.IMAP4.abort("Fallo en noop()")
+
+
+def fetch_one_unseen_email(mail):
+    """Devuelve (id, remitente, asunto, cuerpo) de un email no leído o None."""
+    try:
+        ensure_connection(mail)
         status, data = mail.search(None, "UNSEEN")
+        if status != "OK" or not data or not data[0]:
+            return None
+
         mail_ids = data[0].split()
         if not mail_ids:
             return None
 
-        # Solo procesamos el primero
         num = mail_ids[0]
-
         status, data = mail.fetch(num, "(RFC822)")
-        if status != "OK":
+        if status != "OK" or not data or not data[0]:
             log(f"❌ Error al obtener email ID {num}")
             return None
 
         msg = email.message_from_bytes(data[0][1])
-
-        sender = msg["From"]
-        subject = msg["Subject"]
+        sender = msg.get("From", "")
+        subject = msg.get("Subject", "")
 
         body = ""
         if msg.is_multipart():
             for part in msg.walk():
-                if part.get_content_type() == "text/plain" and not part.get('Content-Disposition'):
-                    body = part.get_payload(decode=True).decode(errors="ignore")
+                ctype = part.get_content_type()
+                if ctype == "text/plain" and not part.get("Content-Disposition"):
+                    body = safe_decode(part.get_payload(decode=True))
                     break
+            if not body:  # fallback a HTML si no hay texto plano
+                for part in msg.walk():
+                    if part.get_content_type() == "text/html":
+                        body = safe_decode(part.get_payload(decode=True))
+                        break
         else:
-            body = msg.get_payload(decode=True).decode(errors="ignore")
+            body = safe_decode(msg.get_payload(decode=True))
 
         return num, sender, subject, body
+    except imaplib.IMAP4.abort:
+        raise
     except Exception as e:
         log(f"⚠️ Error fetching email: {e}")
         return None
 
+
 def mark_as_seen(mail, mail_id):
     try:
-        mail.store(mail_id, '+FLAGS', '\\Seen')
+        ensure_connection(mail)
+        mail.store(mail_id, "+FLAGS", "\\Seen")
+        log(f"✅ Email {mail_id} marcado como leído.")
+    except imaplib.IMAP4.abort:
+        raise
     except Exception as e:
         log(f"⚠️ Error marcando email {mail_id} como leído: {e}")
+
 
 def main_loop():
     mail = connect_imap()
@@ -99,17 +144,21 @@ def main_loop():
 
             try:
                 response = requests.post(ORCHESTRATOR_URL, json=payload)
-                log(f"📤 Respuesta orquestador: {response.json()}")
-                mark_as_seen(mail, mail_id)
+                if response.status_code == 200:
+                    log(f"📤 Respuesta orquestador: {response.json()}")
+                    mark_as_seen(mail, mail_id)
+                else:
+                    log(f"⚠️ Orquestador respondió {response.status_code}, no se marca como leído.")
             except Exception as e:
                 log(f"❌ Error llamando al orquestador: {e}")
 
         except imaplib.IMAP4.abort:
-            log("❌ Conexión IMAP abortada, reconectando...")
+            log("🔄 Reconectando a IMAP...")
             mail = connect_imap()
         except Exception as e:
             log(f"⚠️ Error en el loop principal: {e}")
             time.sleep(5)
+
 
 if __name__ == "__main__":
     log("📡 Mailer iniciado correctamente.")
