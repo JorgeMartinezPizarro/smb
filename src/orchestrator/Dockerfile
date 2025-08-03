@@ -11,8 +11,11 @@ RUN pip install --no-cache-dir \
     scikit-learn \
     flask \
     faiss-cpu \
+	numpy \
     markdown
 
-COPY faq_ingest.py main.py retriever.py .
+RUN pip install --no-cache-dir wikipedia-api requests
+
+COPY faq_ingest.py main.py retriever.py ./
 
 CMD ["python", "main.py"]

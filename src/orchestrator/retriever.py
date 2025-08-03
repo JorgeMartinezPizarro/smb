@@ -9,7 +9,7 @@ class FAQRetriever:
 	def __init__(self, index_path="vector_db/faiss_index.bin", chunks_path="vector_db/chunks.pkl"):
 		self.index_path = index_path
 		self.chunks_path = chunks_path
-		self.model = SentenceTransformer("all-MiniLM-L6-v2")
+		self.model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
 
 		# Si falta alguno, crea el índice
 		if not os.path.exists(self.index_path) or not os.path.exists(self.chunks_path):

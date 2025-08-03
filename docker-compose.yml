@@ -88,6 +88,7 @@ services:
       - BOT_EMAIL=${MAIL_USER}
       - BOT_PASS=${MAIL_PASS}
       - SMTP_SERVER=${MAIL_HOST}
+      - WIKIPEDIA_MAX_CHARS=${WIKIPEDIA_MAX_CHARS}
       - PROMPT_FILE=${PROMPT_FILE}
     volumes:
       - ./cache/sqlite:/data

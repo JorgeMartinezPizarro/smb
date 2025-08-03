@@ -1,10 +1,14 @@
-# vector_db/faq_ingester.py
 import os
 import faiss
 import pickle
 import re
 from pathlib import Path
+import numpy as np
 from sentence_transformers import SentenceTransformer
+
+def normalize_embeddings(embeddings: np.ndarray) -> np.ndarray:
+    norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+    return embeddings / (norms + 1e-10)
 
 def create_index(
     faq_file_path="assets/faq.txt",
@@ -12,8 +16,8 @@ def create_index(
     chunks_path="vector_db/chunks.pkl"
 ):
     if not os.path.exists(index_path) or not os.path.exists(chunks_path):
-        print("Generando nuevo índice FAISS desde FAQ...")
-        
+        print("[INFO] Generando nuevo índice FAISS desde FAQ...")
+
         FAQ_FILE = Path(faq_file_path)
         if not FAQ_FILE.exists():
             raise FileNotFoundError(f"No se encontró el archivo FAQ en: {faq_file_path}")
@@ -23,17 +27,17 @@ def create_index(
 
         # Divide por preguntas que empiezan con número y punto
         chunks = re.split(r'\n(?=\d+\.)', text)
-        # Limpia saltos de línea internos y espacios extras
         chunks = [chunk.replace('\n', ' ').strip() for chunk in chunks if len(chunk.strip()) > 30]
+
         if not chunks:
-            raise ValueError("El archivo FAQ está vacío o mal formateado.")
+            raise ValueError("[ERROR] El archivo FAQ está vacío o mal formateado.")
 
-        model = SentenceTransformer("all-MiniLM-L6-v2")
+        model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
         embeddings = model.encode(chunks, show_progress_bar=True)
-        dimension = embeddings.shape[1]
+        embeddings = normalize_embeddings(embeddings)
 
-        # Crea índice FAISS
-        index = faiss.IndexFlatL2(dimension)
+        dimension = embeddings.shape[1]
+        index = faiss.IndexFlatIP(dimension)  # Similitud coseno con embeddings normalizados
         index.add(embeddings)
 
         Path("vector_db").mkdir(exist_ok=True)
@@ -42,6 +46,9 @@ def create_index(
         with open(chunks_path, "wb") as f:
             pickle.dump(chunks, f)
 
-        print(f"Ingesta completada: {len(chunks)} trozos indexados.")
+        print(f"[INFO] Ingesta completada: {len(chunks)} trozos indexados.")
     else:
-        print("Índice y chunks ya existen. No se regeneran.")
+        print("[INFO] Índice y chunks ya existen. No se regeneran.")
+
+if __name__ == "__main__":
+    create_index()
