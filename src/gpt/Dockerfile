@@ -39,14 +39,11 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
     ln -sf /usr/bin/python3.10 /usr/local/bin/python && \
     ln -sf /usr/bin/pip3 /usr/local/bin/pip
 
-# Variables para pasar flags de NVCC para soporte multi-arch CUDA
-ENV CUDA_NVCC_FLAGS="-gencode arch=compute_86,code=sm_86 -gencode arch=compute_90,code=sm_90"
-
 WORKDIR /llama.cpp
 RUN git clone https://github.com/ggerganov/llama.cpp.git . && \
     mkdir build && \
     cd build && \
-    cmake .. -DGGML_CUDA=${GGML_CUDA} -DLLAMA_BUILD_TESTS=OFF -DCMAKE_CUDA_FLAGS="${CUDA_NVCC_FLAGS}" && \
+    cmake .. -DGGML_CUDA=${GGML_CUDA} -DLLAMA_BUILD_TESTS=OFF -DCMAKE_CUDA_ARCHITECTURES="50;61;70;75;80;86;89;90" && \
     cmake --build . -j$(nproc)
 
 # ------------------------------
@@ -64,7 +61,6 @@ RUN pip install --upgrade pip setuptools wheel cmake ninja scikit-build-core
 RUN cp /llama.cpp/build/bin/libllama.so /llama-cpp-python/libllama.so
 
 ENV LLAMA_CPP_LIB=/llama-cpp-python/libllama.so
-ENV CMAKE_ARGS="-DGGML_CUDA=${GGML_CUDA}"
 ENV FORCE_CMAKE=1
 
 RUN pip wheel . -w wheelhouse --no-deps
