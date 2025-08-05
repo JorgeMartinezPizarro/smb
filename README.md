@@ -18,7 +18,7 @@ A `llama.cpp` service with a `GGUF` model.
 
 ### Orchestrator
 
-A `python` service to use embeddings and `GPT` to generate an answer.
+A `python` service that uses embeddings with `GPT` to answer emails.
 
 ## 🖥️ Requirements
 
