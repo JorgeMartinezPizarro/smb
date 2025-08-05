@@ -40,7 +40,7 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
     ln -sf /usr/bin/pip3 /usr/local/bin/pip
 
 # Variables para pasar flags de NVCC para soporte multi-arch CUDA
-ENV CUDA_NVCC_FLAGS="-gencode arch=compute_86,code=sm_86 -gencode arch=compute_90,code=sm_90 -gencode arch=compute_100,code=sm_100"
+ENV CUDA_NVCC_FLAGS="-gencode arch=compute_86,code=sm_86 -gencode arch=compute_90,code=sm_90"
 
 WORKDIR /llama.cpp
 RUN git clone https://github.com/ggerganov/llama.cpp.git . && \
