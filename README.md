@@ -12,19 +12,19 @@ A `python` mail client looking for new emails.
 
 A `llama.cpp` service with a `GGUF` model.
 
-### Orchestrator
-
-A `python` service to answer emails.
-
 ### Database
 
 `sqlite3` database to store metrics.
+
+### Orchestrator
+
+A `python` service to use embeddings and `GPT` to generate an answer.
 
 ## 🖥️ Requirements
 
 - Docker
 - GNU Make
-- [Nvidia container toolkit] (optional, for GPU usage)
+- Nvidia container toolkit (optional for GPU usage)
 
 **NOTE**: To run `SMB` on windows, you need WSL additionally.
 
