@@ -172,48 +172,61 @@ def get_wikipedia_page(subject, lang="es"):
 		return None
 	return page
 
-def get_relevant_wikipedia_chunks(subject, body, lang="es", WIKIPEDIA_MAX_CHARS=WIKIPEDIA_MAX_CHARS, top_k=WIKIPEDIA_TOP_K):
-	query = subject.strip() if subject and subject.strip() else body.strip()
-	page = get_wikipedia_page(query, lang=lang)
-	if not page or not page.exists():
-		logging.info(f"No se encontró página Wikipedia para '{query}'")
-		return f"No se encontró información relevante sobre '{query}' en Wikipedia."
+def get_relevant_wikipedia_chunks(subject, body, lang="es",
+                                  max_chars=WIKIPEDIA_MAX_CHARS,
+                                  read_chars=WIKIPEDIA_READ_CHARS,
+                                  top_k=WIKIPEDIA_TOP_K):
+    query = subject.strip() if subject and subject.strip() else body.strip()
+    page = get_wikipedia_page(query, lang=lang)
+    if not page or not page.exists():
+        logging.info(f"No se encontró página Wikipedia para '{query}'")
+        return f"No se encontró información relevante sobre '{query}' en Wikipedia."
 
-	# Tomamos resumen + texto, limitados inicialmente
-	full_text = (page.summary + "\n\n" + page.text)[:WIKIPEDIA_READ_CHARS]
+    # Texto completo (resumen + texto) limitado a read_chars
+    full_text = (page.summary + "\n\n" + page.text)[:read_chars].strip()
 
-	# Chunkificar con solapamiento
-	chunks = chunk_text_with_overlap(full_text)
-	if not chunks:
-		return "No hay texto suficiente en Wikipedia para este tema."
+    # Si el texto es pequeño, devuelve todo sin chunking ni FAISS
+    if len(full_text) <= max_chars:
+        logging.info(f"Artículo Wikipedia pequeño ({len(full_text)} chars), se usa entero")
+        return full_text
 
-	model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
-	embeddings = model.encode(chunks, convert_to_numpy=True, show_progress_bar=False)
-	embeddings = normalize_embeddings(embeddings)
+    # Texto largo: hacemos chunking con solapamiento
+    chunks = chunk_text_with_overlap(full_text)
+    if not chunks:
+        return "No hay texto suficiente en Wikipedia para este tema."
 
-	dimension = embeddings.shape[1]
-	index = faiss.IndexFlatIP(dimension)  # usar Inner Product con embeddings normalizados
-	index.add(embeddings)
+    # Generamos embeddings y normalizamos
+    model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
+    embeddings = model.encode(chunks, convert_to_numpy=True, show_progress_bar=False)
+    embeddings = normalize_embeddings(embeddings)
 
-	query_vec = model.encode([query], convert_to_numpy=True)
-	query_vec = normalize_embeddings(query_vec)
+    dimension = embeddings.shape[1]
+    index = faiss.IndexFlatIP(dimension)  # Inner Product para embeddings normalizados
+    index.add(embeddings)
 
-	distances, indices = index.search(query_vec, top_k)
+    query_vec = model.encode([query], convert_to_numpy=True)
+    query_vec = normalize_embeddings(query_vec)
 
-	selected_chunks = []
-	total_chars = 0
-	for idx in indices[0]:
-		if idx < len(chunks):
-			chunk_text = chunks[idx]
-			if total_chars + len(chunk_text) > WIKIPEDIA_MAX_CHARS:
-				break
-			selected_chunks.append(chunk_text)
-			total_chars += len(chunk_text)
+    distances, indices = index.search(query_vec, top_k)
 
-	if not selected_chunks:
-		return "No se encontraron fragmentos relevantes en Wikipedia."
+    selected_chunks = []
+    total_chars = 0
+    seen_chunks = set()
+    for idx in indices[0]:
+        if idx < len(chunks):
+            chunk_text = chunks[idx]
+            if chunk_text in seen_chunks:
+                continue
+            if total_chars + len(chunk_text) > max_chars:
+                break
+            selected_chunks.append(chunk_text)
+            total_chars += len(chunk_text)
+            seen_chunks.add(chunk_text)
 
-	return "\n\n".join(selected_chunks)
+    if not selected_chunks:
+        return "No se encontraron fragmentos relevantes en Wikipedia."
+
+    return "\n\n".join(selected_chunks)
 
 def process_email(sender, subject, body):
 	logging.info(f"Procesando email de {sender} con asunto '{subject}'")
@@ -241,7 +254,10 @@ def process_email(sender, subject, body):
 
 	# Obtén fragmentos relevantes directamente de Wikipedia
 	if subject != "Duda":
-		wikipedia_context = get_relevant_wikipedia_chunks(subject, body, lang="es", WIKIPEDIA_MAX_CHARS=WIKIPEDIA_READ_CHARS, top_k=WIKIPEDIA_TOP_K)
+		wikipedia_context = get_relevant_wikipedia_chunks(subject, body, lang="es",
+                                                 max_chars=WIKIPEDIA_MAX_CHARS,
+                                                 read_chars=WIKIPEDIA_READ_CHARS,
+                                                 top_k=WIKIPEDIA_TOP_K)
 	else:
 		wikipedia_context = ""
 

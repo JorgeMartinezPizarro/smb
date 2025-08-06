@@ -9,6 +9,11 @@ mkdir -p "$MODEL_DIR"
 
 export MODEL_PATH="$MODEL_DIR/$LLM_NAME"
 
+export OMP_NUM_THREADS=${NUM_THREADS}
+export MKL_NUM_THREADS=${NUM_THREADS}
+export OPENBLAS_NUM_THREADS=${NUM_THREADS}
+export NUMEXPR_NUM_THREADS=${NUM_THREADS}
+
 if [ ! -f "${MODEL_PATH}" ]; then
   echo "[ENTRYPOINT] Model not found. Downloading $LLM_REPO..."
   python3 - <<EOF

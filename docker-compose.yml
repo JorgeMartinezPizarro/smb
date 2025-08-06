@@ -4,6 +4,7 @@ services:
     profiles: ["cpu"]
     build:
       context: ./src/gpt
+    cpus: ${NUM_THREADS}
     environment:
       - NUM_THREADS=${NUM_THREADS}
       - MAX_PROMPT_LENGTH=${MAX_PROMPT_LENGTH}
@@ -33,6 +34,7 @@ services:
       args:
         USE_CUDA: cuda
         GGML_CUDA: "1"
+    cpus: ${NUM_THREADS}
     profiles: ["gpu"]
     environment:
       LLM_REPO: ${LLM_REPO}
