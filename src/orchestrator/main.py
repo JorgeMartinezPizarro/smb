@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from email.header import decode_header
 import sqlite3, requests, smtplib, os, time, re, logging
 from email.message import EmailMessage
 import subprocess
@@ -15,7 +16,6 @@ WIKIPEDIA_CHUNK_SIZE = int(os.getenv("WIKIPEDIA_CHUNK_SIZE", "250"))        # pa
 WIKIPEDIA_OVERLAP = int(os.getenv("WIKIPEDIA_OVERLAP", "50"))             # solapamiento entre chunks
 WIKIPEDIA_TOP_K = int(os.getenv("WIKIPEDIA_TOP_K", "100"))                 # nº de chunks a recuperar de Wikipedia
 WIKIPEDIA_MAX_CHARS = int(os.getenv("WIKIPEDIA_MAX_CHARS", "30000"))       # máximo chars para prompt Wikipedia
-WIKIPEDIA_READ_CHARS = int(os.getenv("WIKIPEDIA_READ_CHARS", "50000"))  # máximo chars a descargar Wikipedia
 
 MAIL_HISTORY_SIZE = int(os.getenv("MAIL_HISTORY_SIZE", 8))
 
@@ -174,34 +174,36 @@ def get_wikipedia_page(subject, lang="es"):
 
 def get_relevant_wikipedia_chunks(subject, body, lang="es",
                                   max_chars=WIKIPEDIA_MAX_CHARS,
-                                  read_chars=WIKIPEDIA_READ_CHARS,
                                   top_k=WIKIPEDIA_TOP_K):
-    query = subject.strip() if subject and subject.strip() else body.strip()
-    page = get_wikipedia_page(query, lang=lang)
+    query = body.strip() if body and body.strip() else subject.strip()
+    page = get_wikipedia_page(subject, lang=lang)
+    
     if not page or not page.exists():
-        logging.info(f"No se encontró página Wikipedia para '{query}'")
-        return f"No se encontró información relevante sobre '{query}' en Wikipedia."
+        logging.info(f"No se encontró página Wikipedia para '{subject}'")
+        return f"No se encontró información relevante sobre '{subject}' en Wikipedia."
 
-    # Texto completo (resumen + texto) limitado a read_chars
-    full_text = (page.summary + "\n\n" + page.text)[:read_chars].strip()
+    summary = page.summary.strip()
+    full_text = (page.text or "").strip()
 
-    # Si el texto es pequeño, devuelve todo sin chunking ni FAISS
-    if len(full_text) <= max_chars:
-        logging.info(f"Artículo Wikipedia pequeño ({len(full_text)} chars), se usa entero")
-        return full_text
+    combined_text = f"{summary}\n\n{full_text}"
+    if len(combined_text) <= max_chars:
+        logging.info(f"Artículo completo cabe en el límite ({len(combined_text)} chars). Usando completo.")
+        return combined_text
 
-    # Texto largo: hacemos chunking con solapamiento
+    # Demasiado grande: usar FAISS para encontrar los chunks más relevantes
+    logging.info(f"Artículo demasiado grande ({len(combined_text)} chars). Se aplicará reducción con FAISS.")
+
     chunks = chunk_text_with_overlap(full_text)
     if not chunks:
-        return "No hay texto suficiente en Wikipedia para este tema."
+        return summary
 
-    # Generamos embeddings y normalizamos
+    # FAISS sobre los chunks
     model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
     embeddings = model.encode(chunks, convert_to_numpy=True, show_progress_bar=False)
     embeddings = normalize_embeddings(embeddings)
 
     dimension = embeddings.shape[1]
-    index = faiss.IndexFlatIP(dimension)  # Inner Product para embeddings normalizados
+    index = faiss.IndexFlatIP(dimension)
     index.add(embeddings)
 
     query_vec = model.encode([query], convert_to_numpy=True)
@@ -210,87 +212,97 @@ def get_relevant_wikipedia_chunks(subject, body, lang="es",
     distances, indices = index.search(query_vec, top_k)
 
     selected_chunks = []
-    total_chars = 0
+    total_chars = len(summary)
     seen_chunks = set()
+    final_text = summary
+
     for idx in indices[0]:
         if idx < len(chunks):
-            chunk_text = chunks[idx]
-            if chunk_text in seen_chunks:
+            chunk = chunks[idx]
+            if chunk in seen_chunks:
                 continue
-            if total_chars + len(chunk_text) > max_chars:
+            chunk_len = len(chunk) + 2  # \n\n
+            if total_chars + chunk_len > max_chars:
                 break
-            selected_chunks.append(chunk_text)
-            total_chars += len(chunk_text)
-            seen_chunks.add(chunk_text)
+            selected_chunks.append(chunk)
+            seen_chunks.add(chunk)
+            total_chars += chunk_len
 
-    if not selected_chunks:
-        return "No se encontraron fragmentos relevantes en Wikipedia."
+    if selected_chunks:
+        final_text += "\n\n" + "\n\n".join(selected_chunks)
 
-    return "\n\n".join(selected_chunks)
+    return final_text
+
+def decode_mime_words(s):
+    decoded_fragments = decode_header(s)
+    return ''.join(
+        fragment.decode(encoding or 'utf-8') if isinstance(fragment, bytes) else fragment
+        for fragment, encoding in decoded_fragments
+    )
 
 def process_email(sender, subject, body):
-	logging.info(f"Procesando email de {sender} con asunto '{subject}'")
-	name = get_user_name(sender)
-	if not name:
-		name = extract_name_from_message(body)
-		if name:
-			save_user_name(sender, name)
-			logging.info(f"Guardado nombre '{name}' para {sender}")
-	if not name:
-		name = "cliente"  # fallback
+    # Decodificar asunto MIME si es necesario
+    subject_decoded = decode_mime_words(subject)
 
-	history_entries = get_history_for_sender(sender, limit=MAIL_HISTORY_SIZE)
-	if history_entries:
-		history_text = "\n".join(
-			f"Cliente: {q}\nBot: {r}" for q, r in reversed(history_entries)
-		)
-	else:
-		history_text = "Este es el primer mensaje del cliente."
+    logging.info(f"Procesando email de {sender} con asunto '{subject_decoded}'")
+    name = get_user_name(sender)
+    if not name:
+        name = extract_name_from_message(body)
+        if name:
+            save_user_name(sender, name)
+            logging.info(f"Guardado nombre '{name}' para {sender}")
+    if not name:
+        name = "cliente"  # fallback
 
-	
-	
-	with open("assets/faq.txt", encoding="utf-8") as f:
-		context_text = f.read()
+    history_entries = get_history_for_sender(sender, limit=MAIL_HISTORY_SIZE)
+    if history_entries:
+        history_text = "\n".join(
+            f"Cliente: {q}\nBot: {r}" for q, r in reversed(history_entries)
+        )
+    else:
+        history_text = "Este es el primer mensaje del cliente."
 
-	# Obtén fragmentos relevantes directamente de Wikipedia
-	if subject != "Duda":
-		wikipedia_context = get_relevant_wikipedia_chunks(subject, body, lang="es",
-                                                 max_chars=WIKIPEDIA_MAX_CHARS,
-                                                 read_chars=WIKIPEDIA_READ_CHARS,
-                                                 top_k=WIKIPEDIA_TOP_K)
-	else:
-		wikipedia_context = ""
+    with open("assets/faq.txt", encoding="utf-8") as f:
+        context_text = f.read()
 
-	# Carga la plantilla
-	with open(PROMPT_FILE, encoding="utf-8") as f:
-		template = f.read()
+    # Obtén fragmentos relevantes directamente de Wikipedia usando el asunto decodificado
+    if subject_decoded != "Duda":
+        wikipedia_context = get_relevant_wikipedia_chunks(subject_decoded, body, lang="es",
+                                                         max_chars=WIKIPEDIA_MAX_CHARS,
+                                                         top_k=WIKIPEDIA_TOP_K)
+    else:
+        wikipedia_context = ""
 
-	prompt = template.replace("{greeting}", name) \
-					 .replace("{sender}", sender) \
-					 .replace("{history}", history_text) \
-					 .replace("{message}", body) \
-					 .replace("{context}", context_text) \
-					 .replace("{wikipedia}", wikipedia_context)
+    # Carga la plantilla
+    with open(PROMPT_FILE, encoding="utf-8") as f:
+        template = f.read()
 
-	logging.info(f"Prompt generado para GPT ({len(prompt)} chars)\n\n{prompt}")
+    prompt = template.replace("{greeting}", name) \
+                     .replace("{sender}", sender) \
+                     .replace("{history}", history_text) \
+                     .replace("{message}", body) \
+                     .replace("{context}", context_text) \
+                     .replace("{wikipedia}", wikipedia_context)
 
-	try:
-		answer = ask_gpt_with_retry(prompt)
-		logging.info(f"Recibida respuesta de GPT ({len(answer)} chars)")
-	except Exception as e:
-		logging.error(f"Error llamando a GPT: {e}")
-		answer = ("Lo siento, hemos tenido un problema técnico y no puedo responder "
-				  "tu consulta ahora. Por favor, inténtalo más tarde.")
+    logging.info(f"Prompt generado para GPT ({len(prompt)} chars)\n\n{prompt}")
 
-	log_history(sender, body, answer)
+    try:
+        answer = ask_gpt_with_retry(prompt)
+        logging.info(f"Recibida respuesta de GPT ({len(answer)} chars)")
+    except Exception as e:
+        logging.error(f"Error llamando a GPT: {e}")
+        answer = ("Lo siento, hemos tenido un problema técnico y no puedo responder "
+                  "tu consulta ahora. Por favor, inténtalo más tarde.")
 
-	try:
-		send_email(sender, f"Re: {subject}", answer)
-		logging.info(f"Email enviado a {sender}")
-	except Exception as e:
-		logging.error(f"Error enviando email a {sender}: {e}")
+    log_history(sender, body, answer)
 
-	return answer
+    try:
+        send_email(sender, f"Re: {subject_decoded}", answer)
+        logging.info(f"Email enviado a {sender}")
+    except Exception as e:
+        logging.error(f"Error enviando email a {sender}: {e}")
+
+    return answer
 
 # --- ENDPOINT FLASK ---
 
