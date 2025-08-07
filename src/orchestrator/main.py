@@ -15,7 +15,6 @@ app = Flask(__name__)
 
 # --- CONFIGURACIÓN NUMÉRICA ---
 WIKIPEDIA_CHUNK_SIZE = int(os.getenv("WIKIPEDIA_CHUNK_SIZE", "250"))        # palabras por chunk Wikipedia
-WIKIPEDIA_OVERLAP = int(os.getenv("WIKIPEDIA_OVERLAP", "50"))             # solapamiento entre chunks
 WIKIPEDIA_TOP_K = int(os.getenv("WIKIPEDIA_TOP_K", "100"))                 # nº de chunks a recuperar de Wikipedia
 WIKIPEDIA_MAX_CHARS = int(os.getenv("WIKIPEDIA_MAX_CHARS", "30000"))       # máximo chars para prompt Wikipedia
 
@@ -83,7 +82,7 @@ def ask_gpt_with_retry(prompt, retries=8, delay=2):
 	]
 	for i in range(retries):
 		try:
-			response = requests.post(GPT_URL, json={"messages": messages}, timeout=300)
+			response = requests.post(GPT_URL, json={"messages": messages}, timeout=600)
 			if response.status_code == 200:
 				data = response.json()
 				if "response" in data:
@@ -126,19 +125,6 @@ def extract_name_from_message(message):
 			return name
 	logging.info("No se pudo extraer nombre del mensaje")
 	return None
-
-def chunk_text_with_overlap(text, max_words=WIKIPEDIA_CHUNK_SIZE, overlap=WIKIPEDIA_OVERLAP):
-	words = text.split()
-	chunks = []
-	start = 0
-	while start < len(words):
-		end = min(start + max_words, len(words))
-		chunk = words[start:end]
-		chunks.append(" ".join(chunk))
-		if end == len(words):
-			break
-		start += max_words - overlap
-	return chunks
 
 def normalize_embeddings(embeddings: np.ndarray) -> np.ndarray:
 	norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
@@ -188,35 +174,80 @@ def clean_wikipedia_text(text):
     text = re.sub(r'[ ]{2,}', ' ', text)
     return text.strip()
 
+def chunk_text_semantic(text, max_chunk_chars=WIKIPEDIA_CHUNK_SIZE):
+    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+    chunks = []
+    current_chunk = ""
+    for p in paragraphs:
+        if len(current_chunk) + len(p) + 2 <= max_chunk_chars:
+            current_chunk += (p + "\n\n")
+        else:
+            if current_chunk:
+                chunks.append(current_chunk.strip())
+            current_chunk = p + "\n\n"
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+    return chunks
+
+def extract_sections_text(page):
+    """
+    Extrae recursivamente secciones y subsecciones de la página.
+    Devuelve lista de tuplas (título_sección, texto).
+    """
+    sections = []
+
+    def recurse_sections(sections_list, parent_title=""):
+        for s in sections_list:
+            title = s.title
+            full_title = f"{parent_title} > {title}" if parent_title else title
+            text = clean_wikipedia_text(s.text)
+            if text:
+                sections.append((full_title, text))
+            if s.sections:
+                recurse_sections(s.sections, full_title)
+    recurse_sections(page.sections)
+    return sections
+
 def get_relevant_wikipedia_chunks(subject, body, lang="es",
                                   max_chars=WIKIPEDIA_MAX_CHARS,
                                   top_k=WIKIPEDIA_TOP_K):
     query = body.strip() if body and body.strip() else subject.strip()
     page = get_wikipedia_page(subject, lang=lang)
-    
+
     if not page or not page.exists():
         logging.info(f"No se encontró página Wikipedia para '{subject}'")
         return f"No se encontró información relevante sobre '{subject}' en Wikipedia."
 
     summary = clean_wikipedia_text(page.summary)
-    full_text = clean_wikipedia_text(page.text or "")
 
+    # Si resumen muy largo, recortamos
     if len(summary) > max_chars:
-        # Si el resumen ya es muy grande, lo recortamos
         summary = summary[:max_chars]
 
-    # Si el texto completo cabe en el límite, devolvemos separado claramente
-    combined_length = len(summary) + len(full_text)
-    if combined_length <= max_chars:
-        return f"SUMMARY\n----------\n{summary}\n\nBODY\n----------\n{full_text}"
+    # Extraemos secciones con texto
+    sections = extract_sections_text(page)
 
-    # Si es muy grande, usamos FAISS para seleccionar fragmentos relevantes
-    logging.info(f"Artículo demasiado grande ({combined_length} chars). Se aplicará reducción con FAISS.")
+    # Creamos chunks semánticos con títulos de secciones
+    chunks = []
+    for title, text in sections:
+        if len(text) <= 400:
+            chunks.append(f"Sección: {title}\n{text}")
+        else:
+            subchunks = chunk_text_semantic(text, max_chunk_chars=400)
+            for sc in subchunks:
+                chunks.append(f"Sección: {title}\n{sc}")
 
-    chunks = chunk_text_with_overlap(full_text)
+    # Si no hay chunks, devolvemos solo resumen
     if not chunks:
         return f"SUMMARY\n----------\n{summary}"
 
+    # Si la suma resumen + texto es pequeña, devolvemos completo
+    combined_length = len(summary) + sum(len(c) for c in chunks)
+    if combined_length <= max_chars:
+        full_body = "\n\n".join(chunks)
+        return f"SUMMARY\n----------\n{summary}\n\nBODY\n----------\n{full_body}"
+
+    # Embeddings y FAISS
     model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
     embeddings = model.encode(chunks, convert_to_numpy=True, show_progress_bar=False)
     embeddings = normalize_embeddings(embeddings)
@@ -231,7 +262,7 @@ def get_relevant_wikipedia_chunks(subject, body, lang="es",
     distances, indices = index.search(query_vec, top_k)
 
     selected_chunks = []
-    total_chars = len(summary) + len("SUMMARY\n----------\n\nBODY\n----------\n")  # reservar espacio para headers
+    total_chars = len(summary) + len("SUMMARY\n----------\n\nBODY\n----------\n")  # espacio para headers
     seen_chunks = set()
 
     for idx in indices[0]:
@@ -239,7 +270,7 @@ def get_relevant_wikipedia_chunks(subject, body, lang="es",
             chunk = chunks[idx]
             if chunk in seen_chunks:
                 continue
-            chunk_len = len(chunk) + 2  # +2 para "\n\n"
+            chunk_len = len(chunk) + 2  # +2 para saltos de línea
             if total_chars + chunk_len > max_chars:
                 break
             selected_chunks.append(chunk)
