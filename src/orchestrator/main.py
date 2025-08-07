@@ -8,6 +8,8 @@ import wikipediaapi
 from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
+import unicodedata
+import re
 
 app = Flask(__name__)
 
@@ -172,6 +174,20 @@ def get_wikipedia_page(subject, lang="es"):
 		return None
 	return page
 
+def clean_wikipedia_text(text):
+    if not text:
+        return ""
+    text = unicodedata.normalize('NFKC', text)
+    # Elimina caracteres de control invisibles excepto salto línea
+    text = ''.join(ch for ch in text if (ch == '\n' or unicodedata.category(ch)[0] != 'C'))
+    # Reemplaza tabs y retornos de carro por espacio
+    text = re.sub(r'[\t\r]+', ' ', text)
+    # Simplifica múltiples saltos de línea para mantener párrafos
+    text = re.sub(r' *\n+ *', '\n\n', text)
+    # Reduce espacios múltiples a uno solo
+    text = re.sub(r'[ ]{2,}', ' ', text)
+    return text.strip()
+
 def get_relevant_wikipedia_chunks(subject, body, lang="es",
                                   max_chars=WIKIPEDIA_MAX_CHARS,
                                   top_k=WIKIPEDIA_TOP_K):
@@ -182,22 +198,25 @@ def get_relevant_wikipedia_chunks(subject, body, lang="es",
         logging.info(f"No se encontró página Wikipedia para '{subject}'")
         return f"No se encontró información relevante sobre '{subject}' en Wikipedia."
 
-    summary = page.summary.strip()
-    full_text = (page.text or "").strip()
+    summary = clean_wikipedia_text(page.summary)
+    full_text = clean_wikipedia_text(page.text or "")
 
-    combined_text = f"{summary}\n\n{full_text}"
-    if len(combined_text) <= max_chars:
-        logging.info(f"Artículo completo cabe en el límite ({len(combined_text)} chars). Usando completo.")
-        return combined_text
+    if len(summary) > max_chars:
+        # Si el resumen ya es muy grande, lo recortamos
+        summary = summary[:max_chars]
 
-    # Demasiado grande: usar FAISS para encontrar los chunks más relevantes
-    logging.info(f"Artículo demasiado grande ({len(combined_text)} chars). Se aplicará reducción con FAISS.")
+    # Si el texto completo cabe en el límite, devolvemos separado claramente
+    combined_length = len(summary) + len(full_text)
+    if combined_length <= max_chars:
+        return f"SUMMARY\n----------\n{summary}\n\nBODY\n----------\n{full_text}"
+
+    # Si es muy grande, usamos FAISS para seleccionar fragmentos relevantes
+    logging.info(f"Artículo demasiado grande ({combined_length} chars). Se aplicará reducción con FAISS.")
 
     chunks = chunk_text_with_overlap(full_text)
     if not chunks:
-        return summary
+        return f"SUMMARY\n----------\n{summary}"
 
-    # FAISS sobre los chunks
     model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
     embeddings = model.encode(chunks, convert_to_numpy=True, show_progress_bar=False)
     embeddings = normalize_embeddings(embeddings)
@@ -212,26 +231,24 @@ def get_relevant_wikipedia_chunks(subject, body, lang="es",
     distances, indices = index.search(query_vec, top_k)
 
     selected_chunks = []
-    total_chars = len(summary)
+    total_chars = len(summary) + len("SUMMARY\n----------\n\nBODY\n----------\n")  # reservar espacio para headers
     seen_chunks = set()
-    final_text = summary
 
     for idx in indices[0]:
         if idx < len(chunks):
             chunk = chunks[idx]
             if chunk in seen_chunks:
                 continue
-            chunk_len = len(chunk) + 2  # \n\n
+            chunk_len = len(chunk) + 2  # +2 para "\n\n"
             if total_chars + chunk_len > max_chars:
                 break
             selected_chunks.append(chunk)
             seen_chunks.add(chunk)
             total_chars += chunk_len
 
-    if selected_chunks:
-        final_text += "\n\n" + "\n\n".join(selected_chunks)
+    body_text = "\n\n".join(selected_chunks) if selected_chunks else ""
 
-    return final_text
+    return f"SUMMARY\n----------\n{summary}\n\nBODY\n----------\n{body_text}"
 
 def decode_mime_words(s):
     decoded_fragments = decode_header(s)
