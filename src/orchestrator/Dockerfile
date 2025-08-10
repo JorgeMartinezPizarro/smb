@@ -16,6 +16,6 @@ RUN pip install --no-cache-dir \
 
 RUN pip install --no-cache-dir wikipedia-api requests
 
-COPY main.py ./
+COPY main.py ./main.py
 
 CMD ["python", "main.py"]

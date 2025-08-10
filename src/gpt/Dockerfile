@@ -108,7 +108,8 @@ WORKDIR /app
 COPY requirements.txt . 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY load_model.py entrypoint.sh ./
+COPY load_model.py ./load_model.py
+COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x entrypoint.sh
 
 EXPOSE 5000
