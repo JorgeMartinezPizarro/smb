@@ -10,6 +10,7 @@ import faiss
 import numpy as np
 import unicodedata
 import re
+from sklearn.metrics.pairwise import cosine_similarity
 
 # Initialize models
 model_embed = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
@@ -25,6 +26,7 @@ WIKIPEDIA_MAX_CONTENT = int(os.getenv("WIKIPEDIA_MAX_CONTENT", "12000"))   # Max
 WIKIPEDIA_LANG = os.getenv("WIKIPEDIA_LANG", "en")                         # Default language
 WIKIPEDIA_MIN_SECTION = int(os.getenv("WIKIPEDIA_MIN_SECTION", "200"))     # Min section length to consider
 WIKIPEDIA_BATCH_SIZE = int(os.getenv("WIKIPEDIA_BATCH_SIZE", "32"))        # Embedding batch size
+WIKIPEDIA_THRESHOLD = float(os.getenv("WIKIPEDIA_THRESHOLD", "0.5"))     # Threshold
 
 # Email settings
 MAIL_HISTORY_SIZE = int(os.getenv("MAIL_HISTORY_SIZE", "3"))
@@ -44,285 +46,319 @@ logging.basicConfig(level=logging.INFO)
 # --- Utility Functions ---
 
 def get_user_name(email):
-    """Get stored user name from database"""
-    with sqlite3.connect(DB_PATH) as conn:
-        cur = conn.cursor()
-        cur.execute("SELECT value FROM data WHERE key = ?", (f"name_{email}",))
-        row = cur.fetchone()
-        return row[0] if row else None
+	"""Get stored user name from database"""
+	with sqlite3.connect(DB_PATH) as conn:
+		cur = conn.cursor()
+		cur.execute("SELECT value FROM data WHERE key = ?", (f"name_{email}",))
+		row = cur.fetchone()
+		return row[0] if row else None
 
 def save_user_name(email, name):
-    """Save user name to database"""
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("""
-            INSERT INTO data (key, value) VALUES (?, ?)
-            ON CONFLICT(key) DO UPDATE SET value=excluded.value
-        """, (f"name_{email}", name))
-        conn.commit()
+	"""Save user name to database"""
+	with sqlite3.connect(DB_PATH) as conn:
+		conn.execute("""
+			INSERT INTO data (key, value) VALUES (?, ?)
+			ON CONFLICT(key) DO UPDATE SET value=excluded.value
+		""", (f"name_{email}", name))
+		conn.commit()
 
 def log_history(sender, question, response):
-    """Log conversation history"""
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
-            "INSERT INTO history (timestamp, sender, question, response) VALUES (datetime('now'), ?, ?, ?)",
-            (sender, question, response)
-        )
+	"""Log conversation history"""
+	with sqlite3.connect(DB_PATH) as conn:
+		conn.execute(
+			"INSERT INTO history (timestamp, sender, question, response) VALUES (datetime('now'), ?, ?, ?)",
+			(sender, question, response)
+		)
 
 def get_history_for_sender(sender, limit=MAIL_HISTORY_SIZE):
-    """Retrieve conversation history for sender"""
-    with sqlite3.connect(DB_PATH) as conn:
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT question, response FROM history
-            WHERE sender = ?
-            ORDER BY timestamp DESC
-            LIMIT ?
-        """, (sender, limit))
-        return cur.fetchall()
+	"""Retrieve conversation history for sender"""
+	with sqlite3.connect(DB_PATH) as conn:
+		cur = conn.cursor()
+		cur.execute("""
+			SELECT question, response FROM history
+			WHERE sender = ?
+			ORDER BY timestamp DESC
+			LIMIT ?
+		""", (sender, limit))
+		return cur.fetchall()
 
 def ask_gpt_with_retry(prompt, retries=5, delay=2):
-    """Query GPT service with retry logic"""
-    messages = [{"role": "user", "content": prompt}]
-    for i in range(retries):
-        try:
-            response = requests.post(GPT_URL, json={"messages": messages}, timeout=600)
-            if response.status_code == 200:
-                return response.json().get("response", "").strip()
-            logging.warning(f"GPT bad response: {response.status_code}")
-        except requests.exceptions.RequestException as e:
-            logging.warning(f"Attempt {i+1} failed: {e}")
-            time.sleep(delay)
-    raise Exception("Failed to connect to GPT after multiple attempts")
+	"""Query GPT service with retry logic"""
+	messages = [{"role": "user", "content": prompt}]
+	for i in range(retries):
+		try:
+			response = requests.post(GPT_URL, json={"messages": messages}, timeout=600)
+			if response.status_code == 200:
+				return response.json().get("response", "").strip()
+			logging.warning(f"GPT bad response: {response.status_code}")
+		except requests.exceptions.RequestException as e:
+			logging.warning(f"Attempt {i+1} failed: {e}")
+			time.sleep(delay)
+	raise Exception("Failed to connect to GPT after multiple attempts")
 
 def send_email(to, subject, body):
-    """Send email with given content"""
-    msg = EmailMessage()
-    msg["Subject"] = subject
-    msg["From"] = BOT_EMAIL
-    msg["To"] = to
-    msg.set_content(body.replace('\\n', '\n'))
+	"""Send email with given content"""
+	msg = EmailMessage()
+	msg["Subject"] = subject
+	msg["From"] = BOT_EMAIL
+	msg["To"] = to
+	msg.set_content(body.replace('\\n', '\n'))
 
-    with smtplib.SMTP_SSL(SMTP_SERVER, 465) as smtp:
-        smtp.login(BOT_EMAIL, BOT_PASS)
-        smtp.send_message(msg)
+	with smtplib.SMTP_SSL(SMTP_SERVER, 465) as smtp:
+		smtp.login(BOT_EMAIL, BOT_PASS)
+		smtp.send_message(msg)
 
 def extract_name_from_message(message):
-    """Extract name from message text using patterns"""
-    patterns = [
-        r"me llamo ([a-záéíóúñ]+(?: [a-záéíóúñ]+)*)",
-        r"soy ([a-záéíóúñ]+(?: [a-záéíóúñ]+)*)",
-        r"mi nombre es ([a-záéíóúñ]+(?: [a-záéíóúñ]+)*)"
-    ]
-    for pat in patterns:
-        m = re.search(pat, message.lower(), re.IGNORECASE)
-        if m:
-            return m.group(1).title()
-    return None
+	"""Extract name from message text using patterns"""
+	patterns = [
+		r"me llamo ([a-záéíóúñ]+(?: [a-záéíóúñ]+)*)",
+		r"soy ([a-záéíóúñ]+(?: [a-záéíóúñ]+)*)",
+		r"mi nombre es ([a-záéíóúñ]+(?: [a-záéíóúñ]+)*)"
+	]
+	for pat in patterns:
+		m = re.search(pat, message.lower(), re.IGNORECASE)
+		if m:
+			return m.group(1).title()
+	return None
 
 # --- Wikipedia Processing ---
 
 def get_wikipedia_page(subject, lang=WIKIPEDIA_LANG):
-    """Retrieve Wikipedia page with fallback to search"""
-    wiki = wikipediaapi.Wikipedia(
-        user_agent='knowledge-bot/1.0',
-        language=lang
-    )
-    page = wiki.page(subject)
-    if page.exists():
-        return page
-    
-    # Fallback to search
-    try:
-        search_url = f"https://{lang}.wikipedia.org/w/api.php"
-        params = {
-            "action": "query",
-            "list": "search",
-            "srsearch": subject,
-            "format": "json"
-        }
-        resp = requests.get(search_url, params=params)
-        if resp.status_code == 200:
-            first_title = resp.json().get("query", {}).get("search", [{}])[0].get("title")
-            if first_title:
-                return wiki.page(first_title)
-    except Exception as e:
-        logging.warning(f"Wikipedia search failed: {e}")
-    return None
+	"""Retrieve Wikipedia page with fallback to search"""
+	wiki = wikipediaapi.Wikipedia(
+		user_agent='knowledge-bot/1.0',
+		language=lang
+	)
+	page = wiki.page(subject)
+	if page.exists():
+		return page
+	
+	# Fallback to search
+	try:
+		search_url = f"https://{lang}.wikipedia.org/w/api.php"
+		params = {
+			"action": "query",
+			"list": "search",
+			"srsearch": subject,
+			"format": "json"
+		}
+		resp = requests.get(search_url, params=params)
+		if resp.status_code == 200:
+			first_title = resp.json().get("query", {}).get("search", [{}])[0].get("title")
+			if first_title:
+				return wiki.page(first_title)
+	except Exception as e:
+		logging.warning(f"Wikipedia search failed: {e}")
+	return None
 
 def clean_wikipedia_text(text):
-    """Normalize and clean Wikipedia text"""
-    if not text:
-        return ""
-    text = unicodedata.normalize('NFKC', text)
-    text = ''.join(ch for ch in text if (ch == '\n' or unicodedata.category(ch)[0] != 'C'))
-    text = re.sub(r'[\t\r]+', ' ', text)
-    text = re.sub(r' *\n+ *', '\n\n', text)
-    return re.sub(r'[ ]{2,}', ' ', text).strip()
+	"""Normalize and clean Wikipedia text"""
+	if not text:
+		return ""
+	text = unicodedata.normalize('NFKC', text)
+	text = ''.join(ch for ch in text if (ch == '\n' or unicodedata.category(ch)[0] != 'C'))
+	text = re.sub(r'[\t\r]+', ' ', text)
+	text = re.sub(r' *\n+ *', '\n\n', text)
+	return re.sub(r'[ ]{2,}', ' ', text).strip()
 
 def chunk_text(text, max_chars=WIKIPEDIA_CHUNK_SIZE):
-    """Split text into semantically coherent chunks"""
-    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
-    chunks = []
-    current_chunk = ""
-    
-    for p in paragraphs:
-        if len(current_chunk) + len(p) + 2 <= max_chars:
-            current_chunk += (p + "\n\n")
-        else:
-            if current_chunk:
-                chunks.append(current_chunk.strip())
-            current_chunk = p + "\n\n"
-    
-    if current_chunk:
-        chunks.append(current_chunk.strip())
-    return chunks
+	"""Split text into semantically coherent chunks"""
+	paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+	chunks = []
+	current_chunk = ""
+	
+	for p in paragraphs:
+		if len(current_chunk) + len(p) + 2 <= max_chars:
+			current_chunk += (p + "\n\n")
+		else:
+			if current_chunk:
+				chunks.append(current_chunk.strip())
+			current_chunk = p + "\n\n"
+	
+	if current_chunk:
+		chunks.append(current_chunk.strip())
+	return chunks
 
 def extract_relevant_sections(page):
-    """Extract sections prioritizing current/relevant info"""
-    sections = []
-    priority_terms = ["current", "manager", "coach", "2023", "2024", "present"]
-    
-    def process_section(section, parent_title=""):
-        full_title = f"{parent_title} > {section.title}" if parent_title else section.title
-        text = clean_wikipedia_text(section.text)
+	"""Extract sections prioritizing current/relevant info"""
+	sections = []
+	priority_terms = ["current", "manager", "coach", "2023", "2024", "present"]
+	
+	def process_section(section, parent_title=""):
+		full_title = f"{parent_title} > {section.title}" if parent_title else section.title
+		text = clean_wikipedia_text(section.text)
+		
+		if text and len(text) >= WIKIPEDIA_MIN_SECTION:
+			is_priority = any(term in section.title.lower() for term in priority_terms)
+			sections.append((full_title, text, is_priority))
+		
+		for subsection in section.sections:
+			process_section(subsection, full_title)
+	
+	process_section(page)
+	return sections
+
+def filter_redundant_chunks(chunks, threshold=0.85):
+    embeddings = model_embed.encode(chunks, convert_to_numpy=True)
+    filtered_chunks = []
+    filtered_embeds = []
+
+    for i, emb in enumerate(embeddings):
+        if not filtered_embeds:
+            filtered_chunks.append(chunks[i])
+            filtered_embeds.append(emb)
+            continue
         
-        if text and len(text) >= WIKIPEDIA_MIN_SECTION:
-            is_priority = any(term in section.title.lower() for term in priority_terms)
-            sections.append((full_title, text, is_priority))
-        
-        for subsection in section.sections:
-            process_section(subsection, full_title)
-    
-    process_section(page)
-    return sections
+        sims = cosine_similarity([emb], filtered_embeds)[0]
+        if max(sims) < threshold:
+            filtered_chunks.append(chunks[i])
+            filtered_embeds.append(emb)
+
+    return filtered_chunks
 
 def get_wikipedia_context(subject, query, lang=WIKIPEDIA_LANG):
-    """Retrieve and process relevant Wikipedia content"""
-    page = get_wikipedia_page(subject, lang)
-    if not page or not page.exists():
-        return f"No Wikipedia information found about '{subject}'"
-    
-    sections = extract_relevant_sections(page)
-    if not sections:
-        return "No relevant sections found in Wikipedia page"
-    
-    # Process sections into chunks with priority handling
-    chunks = []
-    for title, text, is_priority in sections:
-        section_chunks = chunk_text(text, WIKIPEDIA_CHUNK_SIZE//2 if is_priority else WIKIPEDIA_CHUNK_SIZE)
-        for chunk in section_chunks:
-            prefix = "PRIORITY: " if is_priority else ""
-            chunks.append(f"{prefix}{title}\n{chunk}")
-    
-    # Generate embeddings in batches
-    embeddings = []
-    for i in range(0, len(chunks), WIKIPEDIA_BATCH_SIZE):
-        batch = chunks[i:i+WIKIPEDIA_BATCH_SIZE]
-        embeddings.append(model_embed.encode(batch, convert_to_numpy=True))
-    embeddings = np.vstack(embeddings)
-    embeddings = embeddings / (np.linalg.norm(embeddings, axis=1, keepdims=True) + 1e-10)
-    
-    # Semantic search
-    query_embed = model_embed.encode([query], convert_to_numpy=True)[0]
-    query_embed = query_embed / (np.linalg.norm(query_embed) + 1e-10)
-    
-    index = faiss.IndexFlatIP(embeddings.shape[1])
-    index.add(embeddings)
-    
-    # Retrieve initial candidates
-    k = min(WIKIPEDIA_TOP_K * 3, len(chunks))
-    distances, indices = index.search(query_embed.reshape(1, -1), k)
-    
-    # Re-rank with cross-encoder
-    candidates = [(chunks[i], distances[0][j]) for j, i in enumerate(indices[0])]
-    cross_scores = reranker.predict([(query, c[0]) for c in candidates])
-    
-    # Combine scores and select best chunks
-    scored_chunks = sorted(
-        [(c[0], 0.4*c[1] + 0.6*s) for c, s in zip(candidates, cross_scores)],
-        key=lambda x: x[1], reverse=True
-    )
-    
-    # Build final content respecting size limit
-    selected_chunks = []
-    total_chars = 0
-    for chunk, _ in scored_chunks[:WIKIPEDIA_TOP_K]:
-        if total_chars + len(chunk) > WIKIPEDIA_MAX_CONTENT:
-            break
-        selected_chunks.append(chunk)
-        total_chars += len(chunk)
-    
-    return "\n\n".join(selected_chunks) if selected_chunks else "No relevant content found"
+	"""Retrieve and process relevant Wikipedia content"""
+	page = get_wikipedia_page(subject, lang)
+	if not page or not page.exists():
+		return f"No Wikipedia information found about '{subject}'"
+	
+	sections = extract_relevant_sections(page)
+	if not sections:
+		return "No relevant sections found in Wikipedia page"
+	
+	# Process sections into chunks with priority handling
+	chunks = []
+	for title, text, is_priority in sections:
+		section_chunks = chunk_text(text, WIKIPEDIA_CHUNK_SIZE//2 if is_priority else WIKIPEDIA_CHUNK_SIZE)
+		for chunk in section_chunks:
+			prefix = "PRIORITY: " if is_priority else ""
+			chunks.append(f"{prefix}{title}\n{chunk}")
+	
+	# Generate embeddings in batches
+	embeddings = []
+	for i in range(0, len(chunks), WIKIPEDIA_BATCH_SIZE):
+		batch = chunks[i:i+WIKIPEDIA_BATCH_SIZE]
+		embeddings.append(model_embed.encode(batch, convert_to_numpy=True))
+	embeddings = np.vstack(embeddings)
+	embeddings = embeddings / (np.linalg.norm(embeddings, axis=1, keepdims=True) + 1e-10)
+	
+	# Semantic search
+	query_embed = model_embed.encode([query], convert_to_numpy=True)[0]
+	query_embed = query_embed / (np.linalg.norm(query_embed) + 1e-10)
+	
+	index = faiss.IndexFlatIP(embeddings.shape[1])
+	index.add(embeddings)
+	
+	# Retrieve initial candidates
+	k = min(WIKIPEDIA_TOP_K * 3, len(chunks))
+	distances, indices = index.search(query_embed.reshape(1, -1), k)
+	
+	# Re-rank with cross-encoder
+	candidates = [(chunks[i], distances[0][j]) for j, i in enumerate(indices[0])]
+	cross_scores = reranker.predict([(query, c[0]) for c in candidates])
+	
+	# Combine scores and select best chunks
+	scored_chunks = sorted(
+		[
+			(
+				c[0],
+				(0.4 * c[1] + 0.6 * s) + (0.1 if c[0].startswith("PRIORITY:") else 0)
+			)
+			for c, s in zip(candidates, cross_scores)
+		],
+		key=lambda x: x[1], reverse=True
+	)
+	
+	scored_chunks = [chunk for chunk in scored_chunks if chunk[1] >= WIKIPEDIA_THRESHOLD]
+
+	# Extraemos solo los textos, descartamos scores para filtrar redundancias
+	chunks_text = [chunk for chunk, score in scored_chunks]
+
+	# Filtramos chunks redundantes
+	filtered_chunks = filter_redundant_chunks(chunks_text, threshold=0.85)
+
+	# Ahora seleccionamos hasta WIKIPEDIA_TOP_K y controlamos el tamaño total
+	selected_chunks = []
+	total_chars = 0
+	for chunk in filtered_chunks[:WIKIPEDIA_TOP_K]:
+		if total_chars + len(chunk) > WIKIPEDIA_MAX_CONTENT:
+			break
+		selected_chunks.append(chunk)
+		total_chars += len(chunk)
+
+	print(f"From Wikipedia: \n{selected_chunks}")
+
+	return "\n\n".join(selected_chunks) if selected_chunks else "No relevant content found"
 
 # --- Email Processing ---
 
 def decode_mime_words(text):
-    """Decode MIME encoded headers"""
-    return ''.join(
-        frag.decode(enc or 'utf-8') if isinstance(frag, bytes) else frag
-        for frag, enc in decode_header(text)
-    )
+	"""Decode MIME encoded headers"""
+	return ''.join(
+		frag.decode(enc or 'utf-8') if isinstance(frag, bytes) else frag
+		for frag, enc in decode_header(text)
+	)
 
 def build_prompt(sender, name, subject, body, history):
-    """Construct the complete prompt for GPT"""
-    with open("assets/faq.txt", encoding="utf-8") as f:
-        faq_context = f.read()
-    
-    with open(PROMPT_FILE, encoding="utf-8") as f:
-        template = f.read()
-    
-    wikipedia_context = "" if subject.lower() == "duda" else get_wikipedia_context(subject, body)
-    
-    return template.replace("{greeting}", name) \
-                  .replace("{sender}", sender) \
-                  .replace("{history}", history) \
-                  .replace("{message}", body) \
-                  .replace("{context}", faq_context) \
-                  .replace("{wikipedia}", wikipedia_context)
+	"""Construct the complete prompt for GPT"""
+	with open("assets/faq.txt", encoding="utf-8") as f:
+		faq_context = f.read()
+	
+	with open(PROMPT_FILE, encoding="utf-8") as f:
+		template = f.read()
+	
+	wikipedia_context = "" if subject.lower() == "duda" else get_wikipedia_context(subject, body)
+	
+	return template.replace("{greeting}", name) \
+				  .replace("{sender}", sender) \
+				  .replace("{history}", history) \
+				  .replace("{message}", body) \
+				  .replace("{context}", faq_context) \
+				  .replace("{wikipedia}", wikipedia_context)
 
 def process_email(sender, subject, body):
-    """Main email processing pipeline"""
-    subject = decode_mime_words(subject)
-    logging.info(f"Processing email from {sender} - Subject: '{subject}'")
-    
-    # Handle user name
-    name = get_user_name(sender) or extract_name_from_message(body) or "user"
-    if not get_user_name(sender) and name != "user":
-        save_user_name(sender, name)
-    
-    # Prepare conversation history
-    history = "\n".join(
-        f"User: {q}\nBot: {r}" for q, r in reversed(get_history_for_sender(sender))
+	"""Main email processing pipeline"""
+	subject = decode_mime_words(subject)
+	logging.info(f"Processing email from {sender} - Subject: '{subject}'")
+	
+	# Handle user name
+	name = get_user_name(sender) or extract_name_from_message(body) or "user"
+	if not get_user_name(sender) and name != "user":
+		save_user_name(sender, name)
+	
+	# Prepare conversation history
+	history = "\n".join(
+		f"User: {q}\nBot: {r}" for q, r in reversed(get_history_for_sender(sender))
 	)
-    # Generate and send response
-    prompt = build_prompt(sender, name, subject, body, history)
-    print(f"Prompt generated:\n\n{prompt}")
-    try:
-        response = ask_gpt_with_retry(prompt)
-        log_history(sender, body, response)
-        send_email(sender, f"Re: {subject}", response)
-        return response
-    except Exception as e:
-        logging.error(f"Email processing failed: {e}")
-        error_msg = "Sorry, we're experiencing technical difficulties. Please try again later."
-        send_email(sender, f"Re: {subject}", error_msg)
-        return error_msg
+	# Generate and send response
+	prompt = build_prompt(sender, name, subject, body, history)
+	print(f"Prompt generated:\n\n{prompt}")
+	try:
+		response = ask_gpt_with_retry(prompt)
+		log_history(sender, body, response)
+		send_email(sender, f"Re: {subject}", response)
+		return response
+	except Exception as e:
+		logging.error(f"Email processing failed: {e}")
+		error_msg = "Sorry, we're experiencing technical difficulties. Please try again later."
+		send_email(sender, f"Re: {subject}", error_msg)
+		return error_msg
 
 # --- API Endpoints ---
 
 @app.route("/process_email", methods=["POST"])
 def api_process_email():
-    """API endpoint for email processing"""
-    data = request.json
-    if not all(k in data for k in ["sender", "subject", "body"]):
-        return jsonify({"error": "Missing required fields"}), 400
-    
-    try:
-        response = process_email(data["sender"], data["subject"], data["body"])
-        return jsonify({"status": "success", "response": response})
-    except Exception as e:
-        logging.error(f"API error: {e}")
-        return jsonify({"error": str(e)}), 500
+	"""API endpoint for email processing"""
+	data = request.json
+	if not all(k in data for k in ["sender", "subject", "body"]):
+		return jsonify({"error": "Missing required fields"}), 400
+	
+	try:
+		response = process_email(data["sender"], data["subject"], data["body"])
+		return jsonify({"status": "success", "response": response})
+	except Exception as e:
+		logging.error(f"API error: {e}")
+		return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+	app.run(host="0.0.0.0", port=5000)
