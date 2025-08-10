@@ -127,7 +127,8 @@ def get_wikipedia_page(subject, lang=WIKIPEDIA_LANG):
 	"""Retrieve Wikipedia page with fallback to search"""
 	wiki = wikipediaapi.Wikipedia(
 		user_agent='knowledge-bot/1.0',
-		language=lang
+		language=lang,
+		extract_format=wikipediaapi.ExtractFormat.WIKI
 	)
 	page = wiki.page(subject)
 	if page.exists():
@@ -180,23 +181,17 @@ def chunk_text(text, max_chars=WIKIPEDIA_CHUNK_SIZE):
 	return chunks
 
 def extract_relevant_sections(page):
-	"""Extract sections prioritizing current/relevant info"""
-	sections = []
-	priority_terms = ["current", "manager", "coach", "2023", "2024", "present"]
-	
-	def process_section(section, parent_title=""):
-		full_title = f"{parent_title} > {section.title}" if parent_title else section.title
-		text = clean_wikipedia_text(section.text)
-		
-		if text and len(text) >= WIKIPEDIA_MIN_SECTION:
-			is_priority = any(term in section.title.lower() for term in priority_terms)
-			sections.append((full_title, text, is_priority))
-		
-		for subsection in section.sections:
-			process_section(subsection, full_title)
-	
-	process_section(page)
-	return sections
+    """Extrae secciones de la página de Wikipedia (sin prioridad hardcodeada)."""
+    sections = []
+    def process_section(section, parent_title=""):
+        full_title = f"{parent_title} > {section.title}" if parent_title else section.title
+        text = clean_wikipedia_text(section.text)
+        if text and len(text) >= WIKIPEDIA_MIN_SECTION:
+            sections.append((full_title, text))
+        for subsection in section.sections:
+            process_section(subsection, full_title)
+    process_section(page)
+    return sections
 
 def filter_redundant_chunks(chunks, threshold=0.85):
     embeddings = model_embed.encode(chunks, convert_to_numpy=True)
@@ -217,78 +212,64 @@ def filter_redundant_chunks(chunks, threshold=0.85):
     return filtered_chunks
 
 def get_wikipedia_context(subject, query, lang=WIKIPEDIA_LANG):
-	"""Retrieve and process relevant Wikipedia content"""
-	page = get_wikipedia_page(subject, lang)
-	if not page or not page.exists():
-		return f"No Wikipedia information found about '{subject}'"
-	
-	sections = extract_relevant_sections(page)
-	if not sections:
-		return "No relevant sections found in Wikipedia page"
-	
-	# Process sections into chunks with priority handling
-	chunks = []
-	for title, text, is_priority in sections:
-		section_chunks = chunk_text(text, WIKIPEDIA_CHUNK_SIZE//2 if is_priority else WIKIPEDIA_CHUNK_SIZE)
-		for chunk in section_chunks:
-			prefix = "PRIORITY: " if is_priority else ""
-			chunks.append(f"{prefix}{title}\n{chunk}")
-	
-	# Generate embeddings in batches
-	embeddings = []
-	for i in range(0, len(chunks), WIKIPEDIA_BATCH_SIZE):
-		batch = chunks[i:i+WIKIPEDIA_BATCH_SIZE]
-		embeddings.append(model_embed.encode(batch, convert_to_numpy=True))
-	embeddings = np.vstack(embeddings)
-	embeddings = embeddings / (np.linalg.norm(embeddings, axis=1, keepdims=True) + 1e-10)
-	
-	# Semantic search
-	query_embed = model_embed.encode([query], convert_to_numpy=True)[0]
-	query_embed = query_embed / (np.linalg.norm(query_embed) + 1e-10)
-	
-	index = faiss.IndexFlatIP(embeddings.shape[1])
-	index.add(embeddings)
-	
-	# Retrieve initial candidates
-	k = min(WIKIPEDIA_TOP_K * 3, len(chunks))
-	distances, indices = index.search(query_embed.reshape(1, -1), k)
-	
-	# Re-rank with cross-encoder
-	candidates = [(chunks[i], distances[0][j]) for j, i in enumerate(indices[0])]
-	cross_scores = reranker.predict([(query, c[0]) for c in candidates])
-	
-	# Combine scores and select best chunks
-	scored_chunks = sorted(
-		[
-			(
-				c[0],
-				(0.4 * c[1] + 0.6 * s) + (0.1 if c[0].startswith("PRIORITY:") else 0)
-			)
-			for c, s in zip(candidates, cross_scores)
-		],
-		key=lambda x: x[1], reverse=True
-	)
-	
-	scored_chunks = [chunk for chunk in scored_chunks if chunk[1] >= WIKIPEDIA_THRESHOLD]
+    """Obtiene chunks de Wikipedia sobre el asunto y los prioriza con el cuerpo del email."""
+    page = get_wikipedia_page(subject, lang)
+    if not page or not page.exists():
+        return f"No Wikipedia information found about '{subject}'"
+    
+    sections = extract_relevant_sections(page)
+    if not sections:
+        return "No relevant sections found in Wikipedia page"
 
-	# Extraemos solo los textos, descartamos scores para filtrar redundancias
-	chunks_text = [chunk for chunk, score in scored_chunks]
+    # Trocear secciones
+    chunks = []
+    for title, text in sections:
+        for chunk in chunk_text(text, WIKIPEDIA_CHUNK_SIZE):
+            chunks.append(f"{title}\n{chunk}")
 
-	# Filtramos chunks redundantes
-	filtered_chunks = filter_redundant_chunks(chunks_text, threshold=0.85)
+    # Embeddings
+    embeddings = []
+    for i in range(0, len(chunks), WIKIPEDIA_BATCH_SIZE):
+        batch = chunks[i:i+WIKIPEDIA_BATCH_SIZE]
+        embeddings.append(model_embed.encode(batch, convert_to_numpy=True))
+    embeddings = np.vstack(embeddings)
+    embeddings /= (np.linalg.norm(embeddings, axis=1, keepdims=True) + 1e-10)
 
-	# Ahora seleccionamos hasta WIKIPEDIA_TOP_K y controlamos el tamaño total
-	selected_chunks = []
-	total_chars = 0
-	for chunk in filtered_chunks[:WIKIPEDIA_TOP_K]:
-		if total_chars + len(chunk) > WIKIPEDIA_MAX_CONTENT:
-			break
-		selected_chunks.append(chunk)
-		total_chars += len(chunk)
+    # Query embedding (body)
+    query_embed = model_embed.encode([query], convert_to_numpy=True)[0]
+    query_embed /= (np.linalg.norm(query_embed) + 1e-10)
 
-	print(f"From Wikipedia: \n{selected_chunks}")
+    # Búsqueda inicial
+    index = faiss.IndexFlatIP(embeddings.shape[1])
+    index.add(embeddings)
+    k = min(WIKIPEDIA_TOP_K * 3, len(chunks))
+    distances, indices = index.search(query_embed.reshape(1, -1), k)
 
-	return "\n\n".join(selected_chunks) if selected_chunks else "No relevant content found"
+    # Rerank con cross-encoder usando el body
+    candidates = [(chunks[i], distances[0][j]) for j, i in enumerate(indices[0])]
+    cross_scores = reranker.predict([(query, c[0]) for c in candidates])
+
+    # Ordenar solo por score del reranker
+    scored_chunks = sorted(
+        zip((c[0] for c in candidates), cross_scores),
+        key=lambda x: x[1],
+        reverse=True
+    )
+
+    # Filtrar redundancias
+    chunks_text = [chunk for chunk, _ in scored_chunks]
+    filtered_chunks = filter_redundant_chunks(chunks_text, threshold=0.85)
+
+    # Selección final por límite de caracteres
+    selected_chunks = []
+    total_chars = 0
+    for chunk in filtered_chunks[:WIKIPEDIA_TOP_K]:
+        if total_chars + len(chunk) > WIKIPEDIA_MAX_CONTENT:
+            break
+        selected_chunks.append(chunk)
+        total_chars += len(chunk)
+
+    return "\n\n".join(selected_chunks) if selected_chunks else "No relevant content found"
 
 # --- Email Processing ---
 
