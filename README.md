@@ -22,9 +22,10 @@ A `python` service that uses embeddings with `GPT` to answer emails.
 
 ## 🖥️ Requirements
 
-- Docker
-- GNU Make
-- Nvidia container toolkit (optional for GPU usage)
+- 8GB VRAM + 8GB RAM for GPU or 16GB RAM for CPU.
+- Docker.
+- GNU Make.
+- Nvidia container toolkit (optional for GPU usage).
 
 **NOTE**: To run `SMB` on windows, you need WSL additionally.
 
