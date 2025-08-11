@@ -28,7 +28,6 @@ REPETITION_PENALTY = float(os.environ.get("REPETITION_PENALTY", 1.15))
 def load_model():
 	global llm
 	logging.info(f"🔄 Cargando modelo con llama-cpp... GPU={USE_GPU}")
-	logging.info(getattr(Llama, "GGML_CUDA", "NO CUDA"))
 	logging.info(os.environ.get("LLAMA_CPP_LIB"))
 	try:
 		llm = Llama(

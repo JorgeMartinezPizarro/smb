@@ -33,7 +33,7 @@ services:
       context: ./src/gpt
       args:
         USE_CUDA: cuda
-        GGML_CUDA: "1"
+        GGML_CUDA: 1
     cpus: ${NUM_THREADS}
     profiles: ["gpu"]
     environment:
