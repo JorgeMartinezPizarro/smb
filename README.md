@@ -50,7 +50,7 @@ Change `.env` according to your needs:
 
 - [Benchmarks](docs/config.md)
 
-To check if you system can use `CUDA`, use:
+To check if your system can use `CUDA`, use:
 
 ```sh
 make test-gpu

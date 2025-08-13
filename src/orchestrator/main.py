@@ -18,6 +18,9 @@ reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2", max_length=256)
 
 app = Flask(__name__)
 
+CACHE_DIR = "/app/cache/wikipedia"
+os.makedirs(CACHE_DIR, exist_ok=True)
+
 # --- Configuration ---
 # Wikipedia settings
 WIKIPEDIA_CHUNK_SIZE = int(os.getenv("WIKIPEDIA_CHUNK_SIZE", "1000"))      # Max chars per content chunk
@@ -123,6 +126,43 @@ def extract_name_from_message(message):
 
 # --- Wikipedia Processing ---
 
+def get_cached_wikipedia(subject, lang=WIKIPEDIA_LANG):
+    safe_subject = subject.replace("/", "_").replace(" ", "_")
+    cache_file = os.path.join(CACHE_DIR, f"{safe_subject}.npz")
+
+    if os.path.exists(cache_file):
+        data = np.load(cache_file, allow_pickle=True)
+        chunks = data["chunks"].tolist()
+        embeddings = data["embeddings"]
+        return chunks, embeddings
+
+    page = get_wikipedia_page(subject, lang)
+    if not page or not page.exists():
+        return [], np.array([])
+
+    sections = extract_relevant_sections(page)
+
+    chunks = []
+    for title, text in sections:
+        if len(text) > WIKIPEDIA_CHUNK_SIZE:
+            # solo partir si es enorme
+            for chunk in chunk_text(text, WIKIPEDIA_CHUNK_SIZE):
+                chunks.append(f"{title}\n{chunk}")
+        else:
+            # sección completa como un solo chunk
+            chunks.append(f"{title}\n{text}")
+
+    embeddings = []
+    for i in range(0, len(chunks), WIKIPEDIA_BATCH_SIZE):
+        batch = chunks[i:i+WIKIPEDIA_BATCH_SIZE]
+        emb = model_embed.encode(batch, convert_to_numpy=True)
+        emb /= (np.linalg.norm(emb, axis=1, keepdims=True) + 1e-10)
+        embeddings.append(emb)
+    embeddings = np.vstack(embeddings)
+
+    np.savez_compressed(cache_file, chunks=np.array(chunks), embeddings=embeddings)
+    return chunks, embeddings
+
 def get_wikipedia_page(subject, lang=WIKIPEDIA_LANG):
 	"""Retrieve Wikipedia page with fallback to search"""
 	wiki = wikipediaapi.Wikipedia(
@@ -162,24 +202,30 @@ def clean_wikipedia_text(text):
 	text = re.sub(r' *\n+ *', '\n\n', text)
 	return re.sub(r'[ ]{2,}', ' ', text).strip()
 
-def chunk_text(text, max_chars=WIKIPEDIA_CHUNK_SIZE):
-	"""Split text into semantically coherent chunks"""
-	paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
-	chunks = []
-	current_chunk = ""
+def chunk_text(text, max_chars=WIKIPEDIA_CHUNK_SIZE, overlap=100):
+    """Split text into semantically coherent chunks with overlap."""
+    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+    chunks = []
+    current_chunk = ""
+    
+    for p in paragraphs:
+        if len(current_chunk) + len(p) + 2 <= max_chars:
+            current_chunk += (p + "\n\n")
+        else:
+            if current_chunk:
+                chunks.append(current_chunk.strip())
+                # Añadir solapamiento: tomar los últimos `overlap` caracteres
+                overlap_text = current_chunk[-overlap:]
+                current_chunk = overlap_text + p + "\n\n"
+            else:
+                # Caso especial: párrafo demasiado grande, se fuerza chunk solo con ese párrafo
+                chunks.append(p)
+                current_chunk = ""
+    
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+    return chunks
 	
-	for p in paragraphs:
-		if len(current_chunk) + len(p) + 2 <= max_chars:
-			current_chunk += (p + "\n\n")
-		else:
-			if current_chunk:
-				chunks.append(current_chunk.strip())
-			current_chunk = p + "\n\n"
-	
-	if current_chunk:
-		chunks.append(current_chunk.strip())
-	return chunks
-
 def extract_relevant_sections(page):
     """Extrae secciones de la página de Wikipedia (sin prioridad hardcodeada)."""
     sections = []
@@ -212,44 +258,25 @@ def filter_redundant_chunks(chunks, threshold=0.85):
     return filtered_chunks
 
 def get_wikipedia_context(subject, query, lang=WIKIPEDIA_LANG):
-    """Obtiene chunks de Wikipedia sobre el asunto y los prioriza con el cuerpo del email."""
-    page = get_wikipedia_page(subject, lang)
-    if not page or not page.exists():
+    chunks, embeddings = get_cached_wikipedia(subject, lang)
+
+    if not chunks:
         return f"No Wikipedia information found about '{subject}'"
-    
-    sections = extract_relevant_sections(page)
-    if not sections:
-        return "No relevant sections found in Wikipedia page"
 
-    # Trocear secciones
-    chunks = []
-    for title, text in sections:
-        for chunk in chunk_text(text, WIKIPEDIA_CHUNK_SIZE):
-            chunks.append(f"{title}\n{chunk}")
-
-    # Embeddings
-    embeddings = []
-    for i in range(0, len(chunks), WIKIPEDIA_BATCH_SIZE):
-        batch = chunks[i:i+WIKIPEDIA_BATCH_SIZE]
-        embeddings.append(model_embed.encode(batch, convert_to_numpy=True))
-    embeddings = np.vstack(embeddings)
-    embeddings /= (np.linalg.norm(embeddings, axis=1, keepdims=True) + 1e-10)
-
-    # Query embedding (body)
+    # Query embedding
     query_embed = model_embed.encode([query], convert_to_numpy=True)[0]
     query_embed /= (np.linalg.norm(query_embed) + 1e-10)
 
-    # Búsqueda inicial
+    # FAISS search
     index = faiss.IndexFlatIP(embeddings.shape[1])
     index.add(embeddings)
     k = min(WIKIPEDIA_TOP_K * 3, len(chunks))
     distances, indices = index.search(query_embed.reshape(1, -1), k)
 
-    # Rerank con cross-encoder usando el body
+    # Rerank con cross-encoder
     candidates = [(chunks[i], distances[0][j]) for j, i in enumerate(indices[0])]
-    cross_scores = reranker.predict([(query, c[0]) for c in candidates])
+    cross_scores = reranker.predict([(query, c[0]) for c in candidates], batch_size=16)
 
-    # Ordenar solo por score del reranker
     scored_chunks = sorted(
         zip((c[0] for c in candidates), cross_scores),
         key=lambda x: x[1],
@@ -257,10 +284,11 @@ def get_wikipedia_context(subject, query, lang=WIKIPEDIA_LANG):
     )
 
     # Filtrar redundancias
-    chunks_text = [chunk for chunk, _ in scored_chunks]
-    filtered_chunks = filter_redundant_chunks(chunks_text, threshold=0.85)
+    filtered_chunks = filter_redundant_chunks(
+        [chunk for chunk, _ in scored_chunks], threshold=0.85
+    )
 
-    # Selección final por límite de caracteres
+    # Selección final
     selected_chunks = []
     total_chars = 0
     for chunk in filtered_chunks[:WIKIPEDIA_TOP_K]:
@@ -313,7 +341,7 @@ def process_email(sender, subject, body):
 	)
 	# Generate and send response
 	prompt = build_prompt(sender, name, subject, body, history)
-	print(f"Prompt generated:\n\n{prompt}")
+	logging.info(f"Prompt generated:\n\n{prompt}")
 	try:
 		response = ask_gpt_with_retry(prompt)
 		log_history(sender, body, response)

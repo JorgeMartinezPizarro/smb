@@ -102,8 +102,5 @@ services:
     volumes:
       - ./cache/sqlite:/data
       - ./cache/vector_db:/app/vector_db
+      - ./cache/wikipedia:/app/cache/wikipedia
       - ./assets/:/app/assets
-
-networks:
-  default:
-    name: ${PROJECT_NAME}-network      
