@@ -326,32 +326,52 @@ def build_prompt(sender, name, subject, body, history):
 				  .replace("{wikipedia}", wikipedia_context)
 
 def process_email(sender, subject, body):
-	"""Main email processing pipeline"""
-	subject = decode_mime_words(subject)
-	logging.info(f"Processing email from {sender} - Subject: '{subject}'")
-	
-	# Handle user name
-	name = get_user_name(sender) or extract_name_from_message(body) or "user"
-	if not get_user_name(sender) and name != "user":
-		save_user_name(sender, name)
-	
-	# Prepare conversation history
-	history = "\n".join(
-		f"User: {q}\nBot: {r}" for q, r in reversed(get_history_for_sender(sender))
-	)
-	# Generate and send response
-	prompt = build_prompt(sender, name, subject, body, history)
-	logging.info(f"Prompt generated:\n\n{prompt}")
-	try:
-		response = ask_gpt_with_retry(prompt)
-		log_history(sender, body, response)
-		send_email(sender, f"Re: {subject}", response)
-		return response
-	except Exception as e:
-		logging.error(f"Email processing failed: {e}")
-		error_msg = "Sorry, we're experiencing technical difficulties. Please try again later."
-		send_email(sender, f"Re: {subject}", error_msg)
-		return error_msg
+    """Main email processing pipeline"""
+    subject = decode_mime_words(subject)
+    logging.info(f"Processing email from {sender} - Subject: '{subject}'")
+    
+    # Handle "Train" special case
+    if subject.strip().lower() == "train":
+        try:
+            train_response = requests.post(
+                f"http://{GPT_SERVICE}:5000/train",
+                json={"prompt": body},
+                timeout=3600  # Ajusta según lo que pueda tardar
+            )
+            if train_response.status_code == 200:
+                send_email(sender, f"Re: {subject}", "Entrenamiento realizado!")
+                return "Entrenamiento realizado!"
+            else:
+                logging.error(f"Training failed: {train_response.text}")
+                send_email(sender, f"Re: {subject}", "Error durante el entrenamiento.")
+                return "Error durante el entrenamiento."
+        except Exception as e:
+            logging.error(f"Training request failed: {e}")
+            send_email(sender, f"Re: {subject}", "Error durante el entrenamiento.")
+            return "Error durante el entrenamiento."
+
+    # Handle user name normally
+    name = get_user_name(sender) or extract_name_from_message(body) or "user"
+    if not get_user_name(sender) and name != "user":
+        save_user_name(sender, name)
+    
+    # Prepare conversation history
+    history = "\n".join(
+        f"User: {q}\nBot: {r}" for q, r in reversed(get_history_for_sender(sender))
+    )
+    # Generate and send response
+    prompt = build_prompt(sender, name, subject, body, history)
+    logging.info(f"Prompt generated:\n\n{prompt}")
+    try:
+        response = ask_gpt_with_retry(prompt)
+        log_history(sender, body, response)
+        send_email(sender, f"Re: {subject}", response)
+        return response
+    except Exception as e:
+        logging.error(f"Email processing failed: {e}")
+        error_msg = "Sorry, we're experiencing technical difficulties. Please try again later."
+        send_email(sender, f"Re: {subject}", error_msg)
+        return error_msg
 
 # --- API Endpoints ---
 
