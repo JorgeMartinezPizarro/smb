@@ -4,6 +4,7 @@ services:
     profiles: ["cpu"]
     build:
       context: ./src/gpt
+      dockerfile: Dockerfile.cpu
     cpus: ${NUM_THREADS}
     environment:
       - NUM_THREADS=${NUM_THREADS}
@@ -31,9 +32,7 @@ services:
     image: ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-gpu:${IMAGE_TAG}
     build:
       context: ./src/gpt
-      args:
-        USE_CUDA: cuda
-        GGML_CUDA: 1
+      dockerfile: Dockerfile.gpu
     cpus: ${NUM_THREADS}
     profiles: ["gpu"]
     environment:
