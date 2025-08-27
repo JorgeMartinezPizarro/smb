@@ -9,6 +9,8 @@ mkdir -p "$MODEL_DIR"
 
 export MODEL_PATH="$MODEL_DIR/$LLM_NAME"
 
+echo "Running ${MODEL_PATH}"
+
 export OMP_NUM_THREADS=${NUM_THREADS}
 export MKL_NUM_THREADS=${NUM_THREADS}
 export OPENBLAS_NUM_THREADS=${NUM_THREADS}
@@ -32,4 +34,4 @@ fi
 
 export LLAMA_CPP_LIB=/llama-cpp-python/libllama.so
 
-exec python /app/load_model.py
+exec python3 /app/load_model.py

@@ -1,58 +1,24 @@
-# Dockerfile.gpu
-FROM nvidia/cuda:12.2.0-devel-ubuntu22.04 AS builder
+FROM nvidia/cuda:12.2.2-devel-ubuntu22.04
 
-# --- Dependencias de build ---
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential cmake git wget curl ca-certificates \
-    python3.10 python3.10-distutils python3-pip ninja-build \
-    libopenblas-dev libssl-dev libcurl4-openssl-dev \
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    git \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 \
-    && ln -sf /usr/bin/python3.10 /usr/local/bin/python \
-    && ln -sf /usr/bin/pip3 /usr/local/bin/pip
+ENV CMAKE_ARGS="-DGGML_CUDA=on -DCMAKE_CUDA_ARCHITECTURES=86;89;90"
+RUN pip3 install --no-cache-dir --upgrade pip \
+    && pip3 install llama-cpp-python
 
-# --- llama.cpp build GPU ---
-WORKDIR /llama.cpp
-RUN git clone https://github.com/ggerganov/llama.cpp.git .
-RUN mkdir build && cd build && \
-    cmake .. -DGGML_CUDA=1 -DLLAMA_BUILD_TESTS=OFF -DCMAKE_CUDA_ARCHITECTURES="50;61;70;75;80;86;89;90" && \
-    cmake --build . -j$(nproc)
-
-# --- llama-cpp-python wheel con LoRa ---
-WORKDIR /llama-cpp-python
-RUN git clone --branch main https://github.com/abetlen/llama-cpp-python.git .
-RUN git submodule update --init --recursive
-RUN pip install --upgrade pip setuptools wheel scikit-build-core ninja cmake
-# Copiar libllama.so desde llama.cpp build
-RUN cp /llama.cpp/build/bin/libllama.so ./libllama.so
-# Construir wheel apuntando a libllama.so
-RUN LLAMA_CPP_LIB=./libllama.so pip wheel . -w wheelhouse --no-deps
-
-# --- Runtime GPU ---
-FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
-ENV USE_GPU=true
 WORKDIR /app
 
-# Dependencias runtime
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3.10 python3.10-distutils python3-pip \
-    libopenblas-dev libcurl4-openssl-dev libgomp1 \
-    && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt load_model.py entrypoint.sh ./
 
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 \
-    && ln -sf /usr/bin/python3.10 /usr/local/bin/python \
-    && ln -sf /usr/bin/pip3 /usr/local/bin/pip
+RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Instalar wheel de llama-cpp-python con LoRa
-COPY --from=builder /llama-cpp-python/wheelhouse /tmp/wheelhouse
-COPY --from=builder /llama.cpp/build/bin/libllama.so /usr/local/lib/python3.10/dist-packages/llama_cpp/lib/libllama.so
-RUN pip install /tmp/wheelhouse/llama_cpp_python-*.whl
-
-# Copiar aplicación
-COPY requirements.txt load_model.py entrypoint.sh . 
-RUN pip install --no-cache-dir -r requirements.txt
 RUN chmod +x entrypoint.sh
 
 EXPOSE 5000
+
 ENTRYPOINT ["./entrypoint.sh"]

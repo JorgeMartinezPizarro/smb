@@ -92,6 +92,13 @@ make logs
 
 for further information.
 
+To change the docker project name, or use another environment file, you can use:
+
+```sh
+ENV_FILE ?= .env.RTX3050-math
+PROJECT_NAME ?= mega
+```
+
 ## 🏛️ License
 
 This product is created by [Jorge Martinez Pizarro](https://ideniox.com) and licensed as a [haat](https://github.com/JorgeMartinezPizarro/haat/blob/main/LICENSE.md).

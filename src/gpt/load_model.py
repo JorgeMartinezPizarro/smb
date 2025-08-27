@@ -1,9 +1,8 @@
 import threading
 import logging
 from flask import Flask, request, jsonify
-from llama_cpp import Llama
+from llama_cpp import Llama, llama_print_system_info
 import os
-
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -27,7 +26,11 @@ REPETITION_PENALTY = float(os.environ.get("REPETITION_PENALTY", 1.15))
 
 def load_model():
 	global llm
-	logging.info(f"🔄 Cargando modelo con llama-cpp... GPU={USE_GPU}")
+	logging.info(f"🔄 Cargando modelo con llama-cpp... USE_GPU={USE_GPU}")
+	logging.info(f"🔄 GPU_LAYERS={GPU_LAYERS}")
+	logging.info("===== llama.cpp system info =====")
+	logging.info(llama_print_system_info())
+	logging.info("=================================")
 	logging.info(os.environ.get("LLAMA_CPP_LIB"))
 	try:
 		llm = Llama(
@@ -83,5 +86,5 @@ def chat():
 		return jsonify({"error": "Generation error"}), 500
 
 if __name__ == "__main__":
-    load_model()  # Cargamos el modelo sin threading
+    load_model()  
     app.run(host="0.0.0.0", port=5000)
