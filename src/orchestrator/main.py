@@ -99,18 +99,208 @@ def ask_gpt_with_retry(prompt, retries=5, delay=2):
 			time.sleep(delay)
 	raise Exception("Failed to connect to GPT after multiple attempts")
 
-def send_email(to, subject, body):
-	"""Send email with given content"""
-	msg = EmailMessage()
-	msg["Subject"] = subject
-	msg["From"] = BOT_EMAIL
-	msg["To"] = to
-	msg.set_content(body.replace('\\n', '\n'))
+def send_email(to, subject, body_md):
+    """
+    Envía email en HTML con:
+    - Bloques de razonamiento internos en sección colapsable
+    - Mensaje final visible directamente
+    """
+    import re
+    from email.message import EmailMessage
+    import smtplib
+    from html import escape
+    import markdown
 
-	with smtplib.SMTP_SSL(SMTP_SERVER, 465) as smtp:
-		smtp.login(BOT_EMAIL, BOT_PASS)
-		smtp.send_message(msg)
+    # Detectar bloque analysis y bloque final
+    pattern = re.compile(
+        r"<\|channel\|>analysis<\|message\|>(.*?)<\|end\|><\|start\|>assistant<\|channel\|>final<\|message\|>(.*)",
+        re.DOTALL
+    )
 
+    match = pattern.search(body_md)
+    if match:
+        analysis_content = match.group(1).strip()
+        final_content = match.group(2).strip()
+    else:
+        # Si no hay bloques especiales, todo va como mensaje final
+        analysis_content = ""
+        final_content = body_md.strip()
+
+    # Convertir markdown a HTML
+    def convert_markdown_to_html(md_text):
+        # Primero convertir el markdown básico
+        html = markdown.markdown(md_text)
+        
+        # Preservar los bloques de código con triple backticks
+        html = re.sub(r'```([\s\S]*?)```', r'<pre><code>\1</code></pre>', html)
+        
+        # Manejar saltos de línea (markdown los ignora sin <br>)
+        html = html.replace('\n', '<br>')
+        
+        return html
+
+    # Convertir el contenido final y de análisis
+    final_html = convert_markdown_to_html(final_content)
+    analysis_html = convert_markdown_to_html(analysis_content) if analysis_content else ""
+
+    # Crear el HTML con estilos integrados
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <meta charset="UTF-8">
+    <style>
+        body {{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 15px;
+            background-color: #f5f7f9;
+        }}
+        .email-container {{
+            border: 1px solid #d1d8e0;
+            border-radius: 12px;
+            padding: 25px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }}
+        .final-content {{
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            line-height: 1.5;
+            border-left: 4px solid #4a6cf7;
+        }}
+        .final-content h1, .final-content h2, .final-content h3 {{
+            color: #1e293b;
+            margin-top: 0;
+        }}
+        .final-content pre {{
+            background-color: #f1f5f9;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            border: 1px solid #e2e8f0;
+        }}
+        .final-content code {{
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+        }}
+        .toggle-section {{
+            margin-bottom: 20px;
+        }}
+        .toggle-checkbox {{
+            display: none;
+        }}
+        .toggle-header {{
+            padding: 15px;
+            cursor: pointer;
+            font-weight: 600;
+            background-color: #4a6cf7;
+            color: white;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: none;
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+            font-size: inherit;
+        }}
+        .toggle-arrow {{
+            transition: transform 0.3s;
+        }}
+        .toggle-content {{
+            padding: 20px;
+            background-color: #f1f5f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            line-height: 1.4;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            display: none;
+        }}
+        .toggle-content pre {{
+            background-color: #e2e8f0;
+            padding: 12px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }}
+        /* Estado cuando está checked */
+        .toggle-checkbox:checked + .toggle-header .toggle-arrow {{
+            transform: rotate(90deg);
+        }}
+        .toggle-checkbox:checked + .toggle-header + .toggle-content {{
+            display: block;
+        }}
+        .footer {{
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 13px;
+            color: #64748b;
+            text-align: center;
+        }}
+        .email-title {{
+            color: #1e293b;
+            font-size: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+        }}
+    </style>
+    </head>
+    <body>
+        <div class="email-container">
+            <div class="email-title">{escape(subject)}</div>
+            <div class="final-content">{final_html}</div>
+    """
+
+    # Añadir la sección de análisis si existe (con CSS puro para toggle)
+    if analysis_html:
+        html_content += f"""
+            <div class="toggle-section">
+                <input type="checkbox" id="analysisToggle" class="toggle-checkbox">
+                <label for="analysisToggle" class="toggle-header">
+                    <span>Ver detalles del análisis interno</span>
+                    <span class="toggle-arrow">▶</span>
+                </label>
+                <div class="toggle-content">
+                    {analysis_html}
+                </div>
+            </div>
+        """
+
+    # Cerrar el HTML
+    html_content += """
+            <div class="footer">
+                Este mensaje fue generado automáticamente. Por favor, no responda a esta dirección de email.
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    # Construir email
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = BOT_EMAIL
+    msg["To"] = to
+    msg.add_alternative(html_content, subtype='html')
+
+    # Enviar por SMTP seguro
+    with smtplib.SMTP_SSL(SMTP_SERVER, 465) as smtp:
+        smtp.login(BOT_EMAIL, BOT_PASS)
+        smtp.send_message(msg)
+		
 def extract_name_from_message(message):
 	"""Extract name from message text using patterns"""
 	patterns = [
