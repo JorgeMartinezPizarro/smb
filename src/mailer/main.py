@@ -65,51 +65,67 @@ def ensure_connection(mail):
         log(f"⚠️ Error en noop(): {e}")
         raise imaplib.IMAP4.abort("Fallo en noop()")
 
+def safe_decode(payload, fallback=""):
+    if isinstance(payload, bytes):
+        try:
+            return payload.decode("utf-8", errors="replace")
+        except Exception:
+            return fallback
+    elif isinstance(payload, str):
+        return payload
+    else:
+        # Por si es int u otro tipo raro
+        return fallback
 
-def fetch_one_unseen_email(mail):
+def fetch_one_unseen_email(mail, max_retries=3):
     """Devuelve (id, remitente, asunto, cuerpo) de un email no leído o None."""
-    try:
-        ensure_connection(mail)
-        status, data = mail.search(None, "UNSEEN")
-        if status != "OK" or not data or not data[0]:
-            return None
+    retries = 0
+    while retries < max_retries:
+        try:
+            ensure_connection(mail)
+            status, data = mail.search(None, "UNSEEN")
+            if status != "OK" or not data or not data[0]:
+                return None
 
-        mail_ids = data[0].split()
-        if not mail_ids:
-            return None
+            mail_ids = data[0].split()
+            if not mail_ids:
+                return None
 
-        num = mail_ids[0]
-        status, data = mail.fetch(num, "(RFC822)")
-        if status != "OK" or not data or not data[0]:
-            log(f"❌ Error al obtener email ID {num}")
-            return None
+            num = mail_ids[0]
+            status, data = mail.fetch(num, "(RFC822)")
+            if status != "OK" or not data or not data[0]:
+                log(f"❌ Error al obtener email ID {num}")
+                return None
 
-        msg = email.message_from_bytes(data[0][1])
-        sender = msg.get("From", "")
-        subject = msg.get("Subject", "")
+            msg = email.message_from_bytes(data[0][1])
+            sender = msg.get("From", "")
+            subject = msg.get("Subject", "")
 
-        body = ""
-        if msg.is_multipart():
-            for part in msg.walk():
-                ctype = part.get_content_type()
-                if ctype == "text/plain" and not part.get("Content-Disposition"):
-                    body = safe_decode(part.get_payload(decode=True))
-                    break
-            if not body:  # fallback a HTML si no hay texto plano
+            body = ""
+            if msg.is_multipart():
                 for part in msg.walk():
-                    if part.get_content_type() == "text/html":
+                    ctype = part.get_content_type()
+                    if ctype == "text/plain" and not part.get("Content-Disposition"):
                         body = safe_decode(part.get_payload(decode=True))
                         break
-        else:
-            body = safe_decode(msg.get_payload(decode=True))
+                if not body:  # fallback a HTML si no hay texto plano
+                    for part in msg.walk():
+                        if part.get_content_type() == "text/html":
+                            body = safe_decode(part.get_payload(decode=True))
+                            break
+            else:
+                body = safe_decode(msg.get_payload(decode=True))
 
-        return num, sender, subject, body
-    except imaplib.IMAP4.abort:
-        raise
-    except Exception as e:
-        log(f"⚠️ Error fetching email: {e}")
-        return None
+            return num, sender, subject, body
 
+        except imaplib.IMAP4.abort:
+            raise
+        except Exception as e:
+            log(f"⚠️ Error fetching email (intento {retries+1}): {e}")
+            retries += 1
+            time.sleep(1)  # espera un segundo antes de reintentar
+
+    return None
 
 def mark_as_seen(mail, mail_id):
     try:
