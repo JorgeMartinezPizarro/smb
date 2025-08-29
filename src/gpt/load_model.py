@@ -39,7 +39,8 @@ def load_model():
 			n_batch=BATCH_SIZE,
 			n_ctx=MAX_PROMPT_LENGTH,
 			n_gpu_layers=GPU_LAYERS if USE_GPU else 0,
-			use_mmap=False,
+			f16_kv=True,
+    		use_mmap=True,
 			use_mlock=False,
 			verbose=True,
 		)

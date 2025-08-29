@@ -101,165 +101,171 @@ def ask_gpt_with_retry(prompt, retries=3, delay=3):
 	raise Exception("Failed to connect to GPT after multiple attempts")
 
 def send_email(to, subject, body_md):
-    """
-    Envía email en HTML con diseño compacto y estilo verde
-    """
-    import re
-    from email.message import EmailMessage
-    import smtplib
-    from html import escape
-    import markdown
+	"""
+	Envía email en HTML con diseño compacto y estilo verde
+	"""
+	import re
+	from email.message import EmailMessage
+	import smtplib
+	from html import escape
+	import markdown
 
-    # Detectar bloque analysis y bloque final
-    pattern = re.compile(
-        r"<\|channel\|>analysis<\|message\|>(.*?)<\|end\|><\|start\|>assistant<\|channel\|>final<\|message\|>(.*)",
-        re.DOTALL
-    )
+	# Detectar bloque analysis y bloque final
+	pattern = re.compile(
+		r"<\|channel\|>analysis<\|message\|>(.*?)<\|end\|><\|start\|>assistant<\|channel\|>final<\|message\|>(.*)",
+		re.DOTALL
+	)
 
-    match = pattern.search(body_md)
-    if match:
-        analysis_content = match.group(1).strip()
-        final_content = match.group(2).strip()
-    else:
-        analysis_content = ""
-        final_content = body_md.strip()
+	match = pattern.search(body_md)
+	if match:
+		analysis_content = match.group(1).strip()
+		final_content = match.group(2).strip()
+	else:
+		analysis_content = ""
+		final_content = body_md.strip()
 
-    # Convertir markdown a HTML
-    def convert_markdown_to_html(md_text):
-        html = markdown.markdown(md_text)
-        html = re.sub(r'```([\s\S]*?)```', r'<pre style="background:#f1f5f9;padding:10px;border-radius:4px;overflow:auto;margin:8px 0;font-size:12px;"><code>\1</code></pre>', html)
-        return html
+	# Convertir markdown a HTML
+	def convert_markdown_to_html(md_text):
+		html = markdown.markdown(md_text)
+		html = re.sub(r'```([\s\S]*?)```', r'<pre style="background:#f1f5f9;padding:10px;border-radius:4px;overflow:auto;margin:8px 0;font-size:12px;"><code>\1</code></pre>', html)
+		return html
 
-    final_html = convert_markdown_to_html(final_content)
-    analysis_html = convert_markdown_to_html(analysis_content) if analysis_content else ""
+	final_html = convert_markdown_to_html(final_content)
+	analysis_html = convert_markdown_to_html(analysis_content) if analysis_content else ""
 
-    # HTML compacto con estilo verde
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-    <meta charset="UTF-8">
-    <style>
-        body {{
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.4;
-            color: #333;
-            max-width: 500px;
-            margin: 0 auto;
-            padding: 10px;
-            background-color: #f5f7f9;
-            font-size: 13px;
-        }}
-        .email-container {{
-            border: 1px solid #d1d8e0;
-            border-radius: 8px;
-            padding: 15px;
-            background-color: #ffffff;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }}
-        .card {{
-            margin-bottom: 12px;
-            border: 1px solid #d1d8e0;
-            border-radius: 6px;
-            background-color: #f8f9fa;
-            overflow: hidden;
-        }}
-        .card-header {{
-            padding: 8px 10px;
-            font-weight: 600;
-            background-color: #22c55e;  /* Verde */
-            color: white;
-            font-size: 12px;
-        }}
-        .card-content {{
-            padding: 12px;
-            background-color: #ffffff;
-        }}
-        .email-title {{
-            color: #1e293b;
-            font-size: 15px;
-            margin-bottom: 12px;
-            text-align: center;
-            font-weight: 600;
-        }}
-        .footer {{
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 1px solid #e2e8f0;
-            font-size: 12px;
-            color: #64748b;
-        }}
-        pre {{
-            background-color: #f1f5f9;
-            padding: 8px;
-            border-radius: 4px;
-            overflow-x: auto;
-            border: 1px solid #e2e8f0;
-            font-size: 11px;
-            margin: 5px 0;
-        }}
-        code {{
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 11px;
-        }}
+	# HTML compacto con estilo verde
+	html_content = f"""
+	<!DOCTYPE html>
+	<html>
+	<head>
+	<meta charset="UTF-8">
+	<style>
+		body {{
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			line-height: 1.4;
+			color: #333;
+			max-width: 500px;
+			margin: 0 auto;
+			padding: 10px;
+			background-color: #f5f7f9;
+			font-size: 13px;
+		}}
+		.email-container {{
+			border: 1px solid #d1d8e0;
+			border-radius: 8px;
+			padding: 15px;
+			background-color: #ffffff;
+			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+		}}
+		.card {{
+			margin-bottom: 12px;
+			border: 1px solid #d1d8e0;
+			border-radius: 6px;
+			background-color: #f8f9fa;
+			overflow: hidden;
+		}}
+		.card-header {{
+			padding: 8px 10px;
+			font-weight: 600;
+			background-color: #22c55e;  /* Verde */
+			color: white;
+			font-size: 12px;
+		}}
+		.card-content {{
+			padding: 12px;
+			background-color: #ffffff;
+		}}
+		.email-title {{
+			color: #1e293b;
+			font-size: 15px;
+			margin-bottom: 12px;
+			text-align: center;
+			font-weight: 600;
+		}}
+		.footer {{
+			margin-top: 15px;
+			padding-top: 10px;
+			border-top: 1px solid #e2e8f0;
+			font-size: 12px;
+			color: #64748b;
+		}}
+		pre {{
+			background-color: #f1f5f9;
+			padding: 8px;
+			border-radius: 4px;
+			overflow-x: auto;
+			border: 1px solid #e2e8f0;
+			font-size: 11px;
+			margin: 5px 0;
+		}}
+		code {{
+			font-family: 'Consolas', 'Monaco', monospace;
+			font-size: 11px;
+		}}
 		h1 {{
 			font-size: 13pt;
 		}}
-    </style>
-    </head>
-    <body>
-        <div class="email-container">
-            <div class="card">
-                <div class="card-header">
-                    ✅ Respuesta final: {escape(subject)}
-                </div>
-                <div class="card-content">
-                    {final_html}
-                </div>
-            </div>
-    """
-
-    html_content += """
-            <div class="card">
-                <div class="card-header">
-					🧑🏼 Respues generada por:
+	</style>
+	</head>
+	<body>
+		<div class="email-container">
+			<div class="card">
+				<div class="card-header">
+					💬 Respuesta {escape(subject)}
 				</div>
 				<div class="card-content">
-                    <p>Atentamente,</p>
+					{final_html}
+				</div>
+			</div>
+	"""
+
+	html_content += """
+			<div class="card">
+				<div class="card-header">
+					🧑🏼 Respuesta generada por:
+				</div>
+				<div class="card-content">
 					<p>George von Knowman</p>
 					<p>Math Teacher Assistant (MTA)</p>
 					<p>https://math.ideniox.com/</p>
-                </div>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
+				</div>
+			</div>
+		
+	"""
 
 	# Añadir análisis scrolleable compacto
-    if analysis_html:
-        html_content += f"""
-            <!-- Bloque de Análisis -->
-            <div class="card">
-                <div class="card-header">
-                    🔍 Análisis interno
-                </div>
-                <div class="card-content" style="max-height: 90px; overflow-y: auto; font-family: 'Consolas', 'Monaco', monospace; font-size: 11px; line-height: 1.3;">
-                    {analysis_html}
-                </div>
-            </div>
-        """
+	if analysis_html:
+		html_content += f"""
+				<!-- Bloque de Análisis -->
+				<div class="card">
+					<div class="card-header">
+						🧠 Razonamiento
+					</div>
+					<div class="card-content" style="max-height: 112px; overflow-y: auto; font-family: 'Consolas', 'Monaco', monospace; font-size: 11px; line-height: 1.3;">
+						{analysis_html}
+					</div>
+				</div>
+			</div>
+			</body>
+			</html>
+		"""
+	else:
+		html_content += f"""
+					</div>
+				</body>
+			</html>
 
-    # Construir y enviar email
-    msg = EmailMessage()
-    msg["Subject"] = subject
-    msg["From"] = BOT_EMAIL
-    msg["To"] = to
-    msg.add_alternative(html_content, subtype='html')
+		"""
+	# Construir y enviar email
+	msg = EmailMessage()
+	msg["Subject"] = subject
+	msg["From"] = BOT_EMAIL
+	msg["To"] = to
+	msg.add_alternative(html_content, subtype='html')
 
-    with smtplib.SMTP_SSL(SMTP_SERVER, 465) as smtp:
-        smtp.login(BOT_EMAIL, BOT_PASS)
-        smtp.send_message(msg)
+	with smtplib.SMTP_SSL(SMTP_SERVER, 465) as smtp:
+		smtp.login(BOT_EMAIL, BOT_PASS)
+		smtp.send_message(msg)
 				
 def extract_name_from_message(message):
 	"""Extract name from message text using patterns"""
@@ -277,41 +283,41 @@ def extract_name_from_message(message):
 # --- Wikipedia Processing ---
 
 def get_cached_wikipedia(subject, lang=WIKIPEDIA_LANG):
-    safe_subject = subject.replace("/", "_").replace(" ", "_")
-    cache_file = os.path.join(CACHE_DIR, f"{safe_subject}.npz")
+	safe_subject = subject.replace("/", "_").replace(" ", "_")
+	cache_file = os.path.join(CACHE_DIR, f"{safe_subject}.npz")
 
-    if os.path.exists(cache_file):
-        data = np.load(cache_file, allow_pickle=True)
-        chunks = data["chunks"].tolist()
-        embeddings = data["embeddings"]
-        return chunks, embeddings
+	if os.path.exists(cache_file):
+		data = np.load(cache_file, allow_pickle=True)
+		chunks = data["chunks"].tolist()
+		embeddings = data["embeddings"]
+		return chunks, embeddings
 
-    page = get_wikipedia_page(subject, lang)
-    if not page or not page.exists():
-        return [], np.array([])
+	page = get_wikipedia_page(subject, lang)
+	if not page or not page.exists():
+		return [], np.array([])
 
-    sections = extract_relevant_sections(page)
+	sections = extract_relevant_sections(page)
 
-    chunks = []
-    for title, text in sections:
-        if len(text) > WIKIPEDIA_CHUNK_SIZE:
-            # solo partir si es enorme
-            for chunk in chunk_text(text, WIKIPEDIA_CHUNK_SIZE):
-                chunks.append(f"{title}\n{chunk}")
-        else:
-            # sección completa como un solo chunk
-            chunks.append(f"{title}\n{text}")
+	chunks = []
+	for title, text in sections:
+		if len(text) > WIKIPEDIA_CHUNK_SIZE:
+			# solo partir si es enorme
+			for chunk in chunk_text(text, WIKIPEDIA_CHUNK_SIZE):
+				chunks.append(f"{title}\n{chunk}")
+		else:
+			# sección completa como un solo chunk
+			chunks.append(f"{title}\n{text}")
 
-    embeddings = []
-    for i in range(0, len(chunks), WIKIPEDIA_BATCH_SIZE):
-        batch = chunks[i:i+WIKIPEDIA_BATCH_SIZE]
-        emb = model_embed.encode(batch, convert_to_numpy=True)
-        emb /= (np.linalg.norm(emb, axis=1, keepdims=True) + 1e-10)
-        embeddings.append(emb)
-    embeddings = np.vstack(embeddings)
+	embeddings = []
+	for i in range(0, len(chunks), WIKIPEDIA_BATCH_SIZE):
+		batch = chunks[i:i+WIKIPEDIA_BATCH_SIZE]
+		emb = model_embed.encode(batch, convert_to_numpy=True)
+		emb /= (np.linalg.norm(emb, axis=1, keepdims=True) + 1e-10)
+		embeddings.append(emb)
+	embeddings = np.vstack(embeddings)
 
-    np.savez_compressed(cache_file, chunks=np.array(chunks), embeddings=embeddings)
-    return chunks, embeddings
+	np.savez_compressed(cache_file, chunks=np.array(chunks), embeddings=embeddings)
+	return chunks, embeddings
 
 def get_wikipedia_page(subject, lang=WIKIPEDIA_LANG):
 	"""Retrieve Wikipedia page with fallback to search"""
@@ -353,101 +359,101 @@ def clean_wikipedia_text(text):
 	return re.sub(r'[ ]{2,}', ' ', text).strip()
 
 def chunk_text(text, max_chars=WIKIPEDIA_CHUNK_SIZE, overlap=100):
-    """Split text into semantically coherent chunks with overlap."""
-    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
-    chunks = []
-    current_chunk = ""
-    
-    for p in paragraphs:
-        if len(current_chunk) + len(p) + 2 <= max_chars:
-            current_chunk += (p + "\n\n")
-        else:
-            if current_chunk:
-                chunks.append(current_chunk.strip())
-                # Añadir solapamiento: tomar los últimos `overlap` caracteres
-                overlap_text = current_chunk[-overlap:]
-                current_chunk = overlap_text + p + "\n\n"
-            else:
-                # Caso especial: párrafo demasiado grande, se fuerza chunk solo con ese párrafo
-                chunks.append(p)
-                current_chunk = ""
-    
-    if current_chunk:
-        chunks.append(current_chunk.strip())
-    return chunks
+	"""Split text into semantically coherent chunks with overlap."""
+	paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+	chunks = []
+	current_chunk = ""
+	
+	for p in paragraphs:
+		if len(current_chunk) + len(p) + 2 <= max_chars:
+			current_chunk += (p + "\n\n")
+		else:
+			if current_chunk:
+				chunks.append(current_chunk.strip())
+				# Añadir solapamiento: tomar los últimos `overlap` caracteres
+				overlap_text = current_chunk[-overlap:]
+				current_chunk = overlap_text + p + "\n\n"
+			else:
+				# Caso especial: párrafo demasiado grande, se fuerza chunk solo con ese párrafo
+				chunks.append(p)
+				current_chunk = ""
+	
+	if current_chunk:
+		chunks.append(current_chunk.strip())
+	return chunks
 	
 def extract_relevant_sections(page):
-    """Extrae secciones de la página de Wikipedia (sin prioridad hardcodeada)."""
-    sections = []
-    def process_section(section, parent_title=""):
-        full_title = f"{parent_title} > {section.title}" if parent_title else section.title
-        text = clean_wikipedia_text(section.text)
-        if text and len(text) >= WIKIPEDIA_MIN_SECTION:
-            sections.append((full_title, text))
-        for subsection in section.sections:
-            process_section(subsection, full_title)
-    process_section(page)
-    return sections
+	"""Extrae secciones de la página de Wikipedia (sin prioridad hardcodeada)."""
+	sections = []
+	def process_section(section, parent_title=""):
+		full_title = f"{parent_title} > {section.title}" if parent_title else section.title
+		text = clean_wikipedia_text(section.text)
+		if text and len(text) >= WIKIPEDIA_MIN_SECTION:
+			sections.append((full_title, text))
+		for subsection in section.sections:
+			process_section(subsection, full_title)
+	process_section(page)
+	return sections
 
 def filter_redundant_chunks(chunks, threshold=0.85):
-    embeddings = model_embed.encode(chunks, convert_to_numpy=True)
-    filtered_chunks = []
-    filtered_embeds = []
+	embeddings = model_embed.encode(chunks, convert_to_numpy=True)
+	filtered_chunks = []
+	filtered_embeds = []
 
-    for i, emb in enumerate(embeddings):
-        if not filtered_embeds:
-            filtered_chunks.append(chunks[i])
-            filtered_embeds.append(emb)
-            continue
-        
-        sims = cosine_similarity([emb], filtered_embeds)[0]
-        if max(sims) < threshold:
-            filtered_chunks.append(chunks[i])
-            filtered_embeds.append(emb)
+	for i, emb in enumerate(embeddings):
+		if not filtered_embeds:
+			filtered_chunks.append(chunks[i])
+			filtered_embeds.append(emb)
+			continue
+		
+		sims = cosine_similarity([emb], filtered_embeds)[0]
+		if max(sims) < threshold:
+			filtered_chunks.append(chunks[i])
+			filtered_embeds.append(emb)
 
-    return filtered_chunks
+	return filtered_chunks
 
 def get_wikipedia_context(subject, query, lang=WIKIPEDIA_LANG):
-    chunks, embeddings = get_cached_wikipedia(subject, lang)
+	chunks, embeddings = get_cached_wikipedia(subject, lang)
 
-    if not chunks:
-        return f"No Wikipedia information found about '{subject}'"
+	if not chunks:
+		return f"No Wikipedia information found about '{subject}'"
 
-    # Query embedding
-    query_embed = model_embed.encode([query], convert_to_numpy=True)[0]
-    query_embed /= (np.linalg.norm(query_embed) + 1e-10)
+	# Query embedding
+	query_embed = model_embed.encode([query], convert_to_numpy=True)[0]
+	query_embed /= (np.linalg.norm(query_embed) + 1e-10)
 
-    # FAISS search
-    index = faiss.IndexFlatIP(embeddings.shape[1])
-    index.add(embeddings)
-    k = min(WIKIPEDIA_TOP_K * 3, len(chunks))
-    distances, indices = index.search(query_embed.reshape(1, -1), k)
+	# FAISS search
+	index = faiss.IndexFlatIP(embeddings.shape[1])
+	index.add(embeddings)
+	k = min(WIKIPEDIA_TOP_K * 3, len(chunks))
+	distances, indices = index.search(query_embed.reshape(1, -1), k)
 
-    # Rerank con cross-encoder
-    candidates = [(chunks[i], distances[0][j]) for j, i in enumerate(indices[0])]
-    cross_scores = reranker.predict([(query, c[0]) for c in candidates], batch_size=16)
+	# Rerank con cross-encoder
+	candidates = [(chunks[i], distances[0][j]) for j, i in enumerate(indices[0])]
+	cross_scores = reranker.predict([(query, c[0]) for c in candidates], batch_size=16)
 
-    scored_chunks = sorted(
-        zip((c[0] for c in candidates), cross_scores),
-        key=lambda x: x[1],
-        reverse=True
-    )
+	scored_chunks = sorted(
+		zip((c[0] for c in candidates), cross_scores),
+		key=lambda x: x[1],
+		reverse=True
+	)
 
-    # Filtrar redundancias
-    filtered_chunks = filter_redundant_chunks(
-        [chunk for chunk, _ in scored_chunks], threshold=0.85
-    )
+	# Filtrar redundancias
+	filtered_chunks = filter_redundant_chunks(
+		[chunk for chunk, _ in scored_chunks], threshold=0.85
+	)
 
-    # Selección final
-    selected_chunks = []
-    total_chars = 0
-    for chunk in filtered_chunks[:WIKIPEDIA_TOP_K]:
-        if total_chars + len(chunk) > WIKIPEDIA_MAX_CONTENT:
-            break
-        selected_chunks.append(chunk)
-        total_chars += len(chunk)
+	# Selección final
+	selected_chunks = []
+	total_chars = 0
+	for chunk in filtered_chunks[:WIKIPEDIA_TOP_K]:
+		if total_chars + len(chunk) > WIKIPEDIA_MAX_CONTENT:
+			break
+		selected_chunks.append(chunk)
+		total_chars += len(chunk)
 
-    return "\n\n".join(selected_chunks) if selected_chunks else "No relevant content found"
+	return "\n\n".join(selected_chunks) if selected_chunks else "No relevant content found"
 
 # --- Email Processing ---
 
