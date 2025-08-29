@@ -98,6 +98,7 @@ services:
       - WIKIPEDIA_MIN_SECTION=${WIKIPEDIA_MIN_SECTION}
       - MAIL_HISTORY_SIZE=${MAIL_HISTORY_SIZE}
       - PROMPT_FILE=${PROMPT_FILE}
+      - TIMEOUT=${TIMEOUT}
     volumes:
       - ./cache/sqlite:/data
       - ./cache/vector_db:/app/vector_db

@@ -67,7 +67,7 @@ def chat():
 	if not messages:
 		return jsonify({"error": "No messages provided"}), 400
 
-	logging.info(f"📝 Prompt recibido (n_messages={len(messages)})")
+	logging.info(f"📝 Prompt recibido (n_messages={len(messages[0])})")
 
 	try:
 		with model_lock:
