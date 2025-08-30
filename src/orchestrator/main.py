@@ -11,6 +11,7 @@ import numpy as np
 import unicodedata
 import re
 from sklearn.metrics.pairwise import cosine_similarity
+from datetime import datetime
 
 ## TODO: separate wiki-rag, email-rag to separated files.
 
@@ -103,7 +104,7 @@ def ask_gpt_with_retry(prompt, retries=3, delay=3):
 			time.sleep(delay)
 	raise Exception("Failed to connect to GPT after multiple attempts")
 
-def send_email(to, subject, body_md):
+def send_email(to, subject, body_md, duration):
 	"""
 	Envía email en HTML con diseño compacto y estilo verde
 	"""
@@ -130,8 +131,7 @@ def send_email(to, subject, body_md):
 
 	# Convertir markdown a HTML
 	def convert_markdown_to_html(md_text):
-		html = markdown.markdown(md_text)
-		html = re.sub(r'```([\s\S]*?)```', r'<pre style="background:#f1f5f9;padding:10px;border-radius:4px;overflow:auto;margin:8px 0;font-size:12px;"><code>\1</code></pre>', html)
+		html = markdown.markdown(md_text, extensions=['fenced_code', 'nl2br'])
 		return html
 
 	final_html = convert_markdown_to_html(final_content)
@@ -139,6 +139,14 @@ def send_email(to, subject, body_md):
 
 	with open(FOOTER_FILE, encoding="utf-8") as f:
 		footer = f.read()
+
+	now = datetime.now()
+
+	formatedTime = now.strftime("%H:%M:%S, %d/%m/%Y")
+
+	footer = footer.replace("{time}", formatedTime)
+	footer = footer.replace("{duration}", duration)
+	
 	# TODO: MOVE html template to editable assets.
 	# HTML compacto con estilo verde
 	html_content = f"""
@@ -209,7 +217,7 @@ def send_email(to, subject, body_md):
 			font-family: 'Consolas', 'Monaco', monospace;
 			font-size: 11px;
 		}}
-		h1, h3, strong, h2 {{
+		h1, h3, h2 {{
 			font-size: 13pt;
 			margin: 8px;
 			display: block;
@@ -491,6 +499,7 @@ def build_prompt(sender, name, subject, body, history):
 
 def process_email(sender, subject, body):
 	"""Main email processing pipeline"""
+	start = time.time()
 	subject = decode_mime_words(subject)
 	logging.info(f"Processing email from {sender} - Subject: '{subject}'")
 	
@@ -509,7 +518,13 @@ def process_email(sender, subject, body):
 	try:
 		response = ask_gpt_with_retry(prompt)
 		log_history(sender, body, response)
-		send_email(sender, f"Re: {subject}", response)
+		end = time.time()
+		elapsed = end - start
+		hours = int(elapsed // 3600)
+		minutes = int((elapsed % 3600) // 60)
+		seconds = int(elapsed % 60)
+		duration = f"Elapsed time: {hours}h {minutes}m {seconds}s"
+		send_email(sender, f"Re: {subject}", response, duration)
 		return response
 	except Exception as e:
 		logging.error(f"Email processing failed: {e}")

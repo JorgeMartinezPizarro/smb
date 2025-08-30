@@ -66,6 +66,18 @@ IMAGE_TAG=first
 
 you can use `make push` and `make pull` to get your own compiled images.
 
+To create custom `prompt` you can use the placeholders:
+
+- `{history}`: historical conversation data.
+- `{message}`: the question of the user.
+- `{context}`: replaced with content extracted from assets/faq.txt, configurable.
+ `{wikipedia}`: replaced with wikipedia extracted content, size configurable.
+
+To create custom `footer`, you can use the placeholders:
+
+- `{time}`: the current date and time.
+- `{duration}`: total duration of the inference.
+
 ## 🏭 Build
 
 To create the containers
@@ -92,12 +104,20 @@ make logs
 
 for further information.
 
-To change the docker project name, or use another environment file, you can use:
+To change the compose project name, or use another environment file, you can use:
 
 ```sh
-ENV_FILE ?= .env.RTX3050-math
-PROJECT_NAME ?= mega
+export ENV_FILE = .env.RTX3050-math
+export PROJECT_NAME = mega
+make build up logs
 ```
+
+## 💬 Usage
+
+After the project is running, the service will answer questions in the configured email account.
+
+To use the service, just send an email with subject `Duda`.
+In order to enable `wikipedia` RAG, you need to provide a search query in the subject to let the model automatically read the wikipedia article.
 
 ## 🏛️ License
 
