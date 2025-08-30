@@ -66,17 +66,19 @@ IMAGE_TAG=first
 
 you can use `make push` and `make pull` to get your own compiled images.
 
-To create custom `prompt` you can use the placeholders:
+To create custom `prompt` using `RAG`, you can use the placeholders:
 
 - `{history}`: historical conversation data.
 - `{message}`: the question of the user.
 - `{context}`: replaced with content extracted from assets/faq.txt, configurable.
- `{wikipedia}`: replaced with wikipedia extracted content, size configurable.
+ - `{wikipedia}`: replaced with wikipedia extracted content, size configurable.
 
 To create custom `footer`, you can use the placeholders:
 
 - `{time}`: the current date and time.
 - `{duration}`: total duration of the inference.
+
+For advanced `Chain of Thought` you need to wait, it is under research and will be availabe soon.
 
 ## 🏭 Build
 
