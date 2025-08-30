@@ -211,7 +211,9 @@ def send_email(to, subject, body_md):
 		}}
 		h1, h3, strong, h2 {{
 			font-size: 13pt;
-			margin: 8pt;
+			margin: 8px;
+			display: block;
+			text-transform: uppercase;
 		}}
 	</style>
 	</head>
