@@ -1,0 +1,4 @@
+<p>George von Knowman</p>
+<p>Math Teacher Assistant (MTA)</p>
+<p>https://math.ideniox.com/</p>
+<p>Powered by unsloth/gpt-oss-20b-GGUF</p>

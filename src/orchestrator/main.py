@@ -12,6 +12,8 @@ import unicodedata
 import re
 from sklearn.metrics.pairwise import cosine_similarity
 
+## TODO: separate wiki-rag, email-rag to separated files.
+
 # Initialize models
 model_embed = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
 reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2", max_length=256)
@@ -44,6 +46,7 @@ DB_PATH = os.getenv("DB_PATH", "/data/db.sqlite")
 GPT_SERVICE = os.getenv("GPT_SERVICE", "gpt-cpu")
 GPT_URL = f"http://{GPT_SERVICE}:5000/gpt"
 PROMPT_FILE = "assets/" + os.environ.get("PROMPT_FILE", "default") + ".txt"
+FOOTER_FILE = "assets/" + os.environ.get("FOOTER_FILE", "default") + ".txt"
 
 logging.basicConfig(level=logging.INFO)
 
@@ -110,6 +113,7 @@ def send_email(to, subject, body_md):
 	from html import escape
 	import markdown
 
+	# TODO: generalizar esto para otros modelos, es hardcodeo para GPT-OSS-20b
 	# Detectar bloque analysis y bloque final
 	pattern = re.compile(
 		r"<\|channel\|>analysis<\|message\|>(.*?)<\|end\|><\|start\|>assistant<\|channel\|>final<\|message\|>(.*)",
@@ -133,6 +137,9 @@ def send_email(to, subject, body_md):
 	final_html = convert_markdown_to_html(final_content)
 	analysis_html = convert_markdown_to_html(analysis_content) if analysis_content else ""
 
+	with open(FOOTER_FILE, encoding="utf-8") as f:
+		footer = f.read()
+	# TODO: MOVE html template to editable assets.
 	# HTML compacto con estilo verde
 	html_content = f"""
 	<!DOCTYPE html>
@@ -211,7 +218,7 @@ def send_email(to, subject, body_md):
 		<div class="email-container">
 			<div class="card">
 				<div class="card-header">
-					💬 Respuesta {escape(subject)}
+					💬 Respuesta
 				</div>
 				<div class="card-content">
 					{final_html}
@@ -222,12 +229,10 @@ def send_email(to, subject, body_md):
 	html_content += """
 			<div class="card">
 				<div class="card-header">
-					🧑🏼 Respuesta generada por:
+					🧑🏼 Redactor
 				</div>
 				<div class="card-content">
-					<p>George von Knowman</p>
-					<p>Math Teacher Assistant (MTA)</p>
-					<p>https://math.ideniox.com/</p>
+					{footer}
 				</div>
 			</div>
 		
