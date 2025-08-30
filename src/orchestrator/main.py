@@ -227,7 +227,7 @@ def send_email(to, subject, body_md):
 			</div>
 	"""
 
-	html_content += """
+	html_content += f"""
 			<div class="card">
 				<div class="card-header">
 					🧑🏼 Redactor
