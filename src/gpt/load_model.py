@@ -40,9 +40,9 @@ def load_model():
 			n_ctx=MAX_PROMPT_LENGTH,
 			n_gpu_layers=GPU_LAYERS if USE_GPU else 0,
 			f16_kv=True,
-    		use_mmap=True,
-			use_mlock=False,
-			verbose=True,
+    		use_mmap=False,
+    		use_mlock=True,
+    		verbose=True,
 		)
 		logging.info(f"Modelo creado con n_gpu_layers = {GPU_LAYERS if USE_GPU else 0}")
 		with model_lock:

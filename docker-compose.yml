@@ -2,6 +2,8 @@ services:
   gpt-cpu:
     image: ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-cpu:${IMAGE_TAG}
     profiles: ["cpu"]
+    ulimits:
+      memlock: -1
     build:
       context: ./src/gpt
       dockerfile: Dockerfile.cpu
@@ -33,8 +35,9 @@ services:
     build:
       context: ./src/gpt
       dockerfile: Dockerfile.gpu
-    cpus: ${NUM_THREADS}
     profiles: ["gpu"]
+    ulimits:
+      memlock: -1
     environment:
       LLM_REPO: ${LLM_REPO}
       LLM_NAME: ${LLM_NAME}

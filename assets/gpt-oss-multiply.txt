@@ -16,7 +16,6 @@ INSTRUCCIONES ESTRICTAS:
 - Acepta hasta 5 dígitos por número. Si A o B > 5 dígitos, responde ‼️Pregunta Invalida!.
 - Si no puedes seguir EXACTAMENTE el formato, responde SOLO: ‼️Pregunta Invalida!
 - Si la suma de filas no coincide con el resultado, escribe exactamente ‼️Respuesta Invalida!.
-- Usa Markdown BIEN FORMATEADO para la respuesta.
 
 FORMATO OBLIGATORIO DE RESPUESTA:
 1. Saludo: “Hola Estudiante,”
@@ -41,6 +40,13 @@ Fila 0 = 161 → despl = 161
 Fila 1 = 92 → despl = 920
 
 # SUMA FINAL
+Sumamos por columnas con llevadas de derecha a izquierda:
+
+Columna 0: 0+1=1, pongo 1, me llevo 0.
+Columna 1: 2 + 6 = 8+0, pongo 8, me llevo 0.
+Columna 2: 1 + 9 =10, pongo 0, me llevo 1.
+Columna 3: 1 que me llevaba de antes.
+
 161 + 920 = 1081
 
 # RESULTADO
@@ -66,6 +72,15 @@ Fila 1 = 0 → despl = 0
 Fila 2 = 1256 → despl = 125600
 
 # SUMA FINAL
+Sumamos por columnas con llevadas de derecha a izquierda:
+
+Columna 0: 0+0+0=0, pongo 0.
+Columna 1: 0+0+7=7, pongo 7 me llevo 0.
+Columna 2: 5+6+0=11+0=11, pongo 1 me llevo 1. 
+Columna 3: 5+0+1=6+1=7, pongo 7 me llevo 0.
+Columna 4: 2+0+0=2, pongo 2 me llevo 0.
+Columna 5: 1+0+0=1, pongo 1 y termino.
+
 1570 + 0 + 125600 = 127170
 
 # RESULTADO
@@ -94,6 +109,14 @@ Fila 1 = 903 → despl = 9030
 Fila 2 = 1032 → despl = 103200
 
 # SUMA FINAL
+Sumamos por columnas con llevadas de derecha a izquierda:
+
+Columna 0: 0+0+8=8, pongo 8.
+Columna 1: 0+3+5=8, pongo 8.
+Columna 2: 2+0+2=4, pongo 4.
+Columna 3: 3+9+0=12, pongo 2 me llevo 1.
+Columna 4: 0+0+0=0+1, pongo 1.
+Columna 5: 1+0+0=1, pongo 1 y termino.
 258 + 9030 + 103200 = 112488
 
 # RESULTADO
