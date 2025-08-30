@@ -174,8 +174,8 @@ def send_email(to, subject, body_md):
 		.card-header {{
 			padding: 8px 10px;
 			font-weight: 600;
-			background-color: #22c55e;  /* Verde */
-			color: white;
+			background-color: #EAEAEA;
+			color: #247524;
 			font-size: 12px;
 		}}
 		.card-content {{
@@ -209,8 +209,9 @@ def send_email(to, subject, body_md):
 			font-family: 'Consolas', 'Monaco', monospace;
 			font-size: 11px;
 		}}
-		h1 {{
+		h1, h3, strong, h2 {{
 			font-size: 13pt;
+			margin: 8pt;
 		}}
 	</style>
 	</head>
