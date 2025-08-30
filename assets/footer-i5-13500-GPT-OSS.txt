@@ -1,0 +1,8 @@
+<p>George von Knowman</p>
+<p>Math Teacher Assistant (MTA)</p>
+<p>https://math.ideniox.com/</p>
+<hr/>
+<p>Model: unsloth/gpt-oss-20b-GGUF</p>
+<p>CPU: i5 13500 64GB RAM</p>
+<p>Time: {time}</p>
+<p>Duration: {duration}</p>
