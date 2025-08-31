@@ -530,7 +530,7 @@ def process_email(sender, subject, body):
 		minutes = int((elapsed % 3600) // 60)
 		seconds = int(elapsed % 60)
 		duration = f"Elapsed time: {hours}h {minutes}m {seconds}s"
-		send_email(sender, f"Re: {subject}", error_msg, )
+		send_email(sender, f"Re: {subject}", error_msg, duration)
 		return error_msg
 
 # --- API Endpoints ---

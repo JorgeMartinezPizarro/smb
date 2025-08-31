@@ -1,8 +1,8 @@
 <p>George von Knowman</p>
-<p>Math Teacher Assistant (MTA)</p>
-<p>https://math.ideniox.com/</p>
+<p>Junior Teacher Support (JTS)</p>
+<p>https://ideniox.com/</p>
 <hr/>
-<p>Model: unsloth/gpt-oss-20b-GGUF</p>
+<p>Model: {model}</p>
 <p>GPU: RTX3050 8GB VRAM</p>
 <p>CPU: i5 12400 16GB RAM</p>
 <p>Time: {time}</p>
