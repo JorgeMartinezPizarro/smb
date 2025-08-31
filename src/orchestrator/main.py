@@ -48,7 +48,7 @@ GPT_SERVICE = os.getenv("GPT_SERVICE", "gpt-cpu")
 GPT_URL = f"http://{GPT_SERVICE}:5000/gpt"
 PROMPT_FILE = "assets/" + os.environ.get("PROMPT_FILE", "default") + ".txt"
 FOOTER_FILE = "assets/" + os.environ.get("FOOTER_FILE", "default") + ".txt"
-
+LLM_NAME = os.getenv("LLM_NAME", "unknown")
 logging.basicConfig(level=logging.INFO)
 
 # --- Utility Functions ---
@@ -146,6 +146,7 @@ def send_email(to, subject, body_md, duration):
 
 	footer = footer.replace("{time}", formatedTime)
 	footer = footer.replace("{duration}", duration)
+	footer = footer.replace("{model}", LLM_NAME)
 	
 	# TODO: MOVE html template to editable assets.
 	# HTML compacto con estilo verde
@@ -529,7 +530,13 @@ def process_email(sender, subject, body):
 	except Exception as e:
 		logging.error(f"Email processing failed: {e}")
 		error_msg = "Sorry, we're experiencing technical difficulties. Please try again later."
-		send_email(sender, f"Re: {subject}", error_msg)
+		end = time.time()
+		elapsed = end - start
+		hours = int(elapsed // 3600)
+		minutes = int((elapsed % 3600) // 60)
+		seconds = int(elapsed % 60)
+		duration = f"Elapsed time: {hours}h {minutes}m {seconds}s"
+		send_email(sender, f"Re: {subject}", error_msg, )
 		return error_msg
 
 # --- API Endpoints ---

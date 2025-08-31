@@ -103,6 +103,7 @@ services:
       - PROMPT_FILE=${PROMPT_FILE}
       - TIMEOUT=${TIMEOUT}
       - FOOTER_FILE=${FOOTER_FILE}
+      - LLM_NAME=${LLM_NAME}
     volumes:
       - ./cache/sqlite:/data
       - ./cache/vector_db:/app/vector_db
