@@ -218,12 +218,6 @@ def send_email(to, subject, body_md, duration):
 			font-family: 'Consolas', 'Monaco', monospace;
 			font-size: 11px;
 		}}
-		h1, h3, h2 {{
-			font-size: 13pt;
-			margin: 8px;
-			display: block;
-			text-transform: uppercase;
-		}}
 	</style>
 	</head>
 	<body>
@@ -375,7 +369,7 @@ def clean_wikipedia_text(text):
 	text = re.sub(r' *\n+ *', '\n\n', text)
 	return re.sub(r'[ ]{2,}', ' ', text).strip()
 
-def chunk_text(text, max_chars=WIKIPEDIA_CHUNK_SIZE, overlap=WIKIPEDIA_CHUNK_SIZE/5):
+def chunk_text(text, max_chars=WIKIPEDIA_CHUNK_SIZE, overlap=int(WIKIPEDIA_CHUNK_SIZE/5)):
 	"""Split text into semantically coherent chunks with overlap."""
 	paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
 	chunks = []
