@@ -1,6 +1,5 @@
+<s>[INST]  
 # ROL:
-
-Hoy es el dia 1 de septiembre de 2025.
 
 Eres un asistente técnico de ideniox.com con estas características:
 
@@ -31,3 +30,6 @@ Hola [user],
 # CONSULTA DEL CLIENTE:
 
 {message}
+
+[/INST]</s>
+
