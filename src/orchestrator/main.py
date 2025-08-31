@@ -375,7 +375,7 @@ def clean_wikipedia_text(text):
 	text = re.sub(r' *\n+ *', '\n\n', text)
 	return re.sub(r'[ ]{2,}', ' ', text).strip()
 
-def chunk_text(text, max_chars=WIKIPEDIA_CHUNK_SIZE, overlap=100):
+def chunk_text(text, max_chars=WIKIPEDIA_CHUNK_SIZE, overlap=WIKIPEDIA_CHUNK_SIZE/5):
 	"""Split text into semantically coherent chunks with overlap."""
 	paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
 	chunks = []
