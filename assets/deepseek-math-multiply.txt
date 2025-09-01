@@ -28,36 +28,43 @@ EJEMPLO:
 A = 129  
 B = 912
 
-[Paso 0] d = 2 (unidades del multiplicador)  
-9×2=18 → pongo 8, me llevo 1  
+Cogemos los digitos de A y B de derecha a izquierda:
+Digitos de A de derecha a izquierda: 9 2 1.
+
+[Paso 0] d = 2 (primer digito de B por la derecha)
+Multiplicamos por cada digito de 129.
+2×9=18 → pongo 8, me llevo 1  
 2×2=4 + 1=5 → pongo 5, me llevo 0  
-1×2=2 + 0=2 → pongo 2 , me llevo 0.
-Como me llevo 0, no pongo nada, si no pongo las que me llevo. Si las que me llevo anteriores son distintas de cero, las ponemos!
-(Primera fila, no agregamos ceros)  
+2×1=2 + 0=2 → pongo 2 , me llevo 0.
+Pongo el numero que me llevo, 0.
+Primera fila, no agregamos ceros.
 Fila 0 = 258 → despl = 258
 
-[Paso 1] d = 1 (decenas del multiplicador)  
-9×1=9 → pongo 9, me llevo 0  
-2×1=2 + 0=2 → pongo 2, me llevo 0  
+[Paso 1] d = 1 (segundo digito de B por la derecha)
+Multiplicamos por cada digito de 129.
+1×9=9 → pongo 9, me llevo 0  
+1×2=2 + 0=2 → pongo 2, me llevo 0  
 1×1=1 + 0=1 → pongo 1  
-Como me llevo 0, no pongo nada, si no pongo las que me llevo. Si las que me llevo anteriores son distintas de cero, las ponemos!
-(Agregamos un cero al final de la fila como desplazamiento)  
+Pongo el numero que me llevo, 0.
+Agregamos un cero al final de la fila como desplazamiento.
 Fila 1 = 129 → despl = 1290
 
-[Paso 2] d = 9 (centenas del multiplicador)
+[Paso 2] d = 9 (tercer digito de B por la derecha)
+Multiplicamos por cada digito de 129.
 9×9=81 → pongo 1, me llevo 8
 9×2=18, 18+8 que me llevo = 26 → pongo 6, me llevo 2
 9×1=9, 9+2 que me llevo, 11 → pongo 1, me llevo 1  
-Como me llevo 1, pongo 1. Si fuera 0, no pondriamos nada!
-(Agregamos dos ceros al final de la fila como desplazamiento)
-Fila 2 = 1161 → 116100
+Pongo el numero que me llevo, 1.
+Agregamos dos ceros al final de la fila como desplazamiento.
+Fila 2 = 1161 → depl = 116100
+
 # SUMA FINAL
 
 ALINEAMOS los numeros hacia la derecha y sumamos:
 
-     258
-    1290
-+ 116100
+258
+1290
+116100
 
 Columna 0: 8 + 0 + 0 = 8 → pongo 8, me llevo 0  
 Columna 1: 5 + 9 + 0 = 14 → pongo 4, me llevo 1  

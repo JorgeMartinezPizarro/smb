@@ -13,9 +13,9 @@ INSTRUCCIONES ESTRICTAS:
 - Genera cada fila parcial completa y alineada según la posición del dígito.
 - Al final, suma todas las filas parciales con el mismo método de llevadas.
 - SOLO usa aritmética básica, sin fórmulas ni atajos.
-- Acepta hasta 5 dígitos por número. Si A o B > 5 dígitos, responde ‼️Pregunta Inválida!.
-- Si no puedes seguir EXACTAMENTE el formato, responde SOLO: ‼️Formato Inválido!
-- Si la suma de filas no coincide con el resultado, escribe exactamente ‼️Respuesta Inválida!.
+- Acepta hasta 5 dígitos por número. Si A o B > 5 dígitos, responde ‼️Pregunta Invalida!.
+- Si no puedes seguir EXACTAMENTE el formato, responde SOLO: ‼️Pregunta Invalida!
+- Si la suma de filas no coincide con el resultado, escribe exactamente ‼️Respuesta Invalida!.
 
 FORMATO OBLIGATORIO DE RESPUESTA:
 1. Saludo: “Hola Estudiante,”
@@ -30,13 +30,16 @@ A = 23
 B = 47
 
 [Paso 0] d = 7
-3×7=21 → 1, c2
-2×7=14+2=16 → 6, c1
+3×7=21 → pongo 1, me llevo 2
+2×7=14+2=16 → pongo 6, me llevo 1
+Pongo el 1 que me llevo.
+(Como es la primera cifra, no agregamos 0s a la derecha)
 Fila 0 = 161 → despl = 161
 
 [Paso 1] d = 4
-3×4=12 → 2, c1
-2×4=8+1=9 → 9
+3×4=12 → pongo 2, me llevo 1
+2×4=8+1=9 → pongo 9
+(Segunda cifra, agregamos un 0 al final!)
 Fila 1 = 92 → despl = 920
 
 # SUMA FINAL
@@ -57,18 +60,25 @@ A = 314
 B = 405
 
 [Paso 0] d = 5
-4×5=20 → 0, c2
-1×5=5+2=7
-3×5=15 → 5, c1
+4×5=20 → pongo 0, me llevo 2
+1×5=5+2=7 → pongo 7
+3×5=15 → pongo 5, me llevo 1
+Ponemos el 1 que me llevaba.
+(Primera cifra, no ponemos 0 a la derecha)
 Fila 0 = 1570 → despl = 1570
 
+
 [Paso 1] d = 0
+(El valor es 0, no hace falta poner 0 a la derecha)
 Fila 1 = 0 → despl = 0
 
+
 [Paso 2] d = 4
-4×4=16 → 6, c1
-1×4=4+1=5
-3×4=12 → 2, c1
+4×4=16 → pongo 6, me llevo 1
+1×4=4+1=5 → pongo 5
+3×4=12 → pongo 2, me llevo 1
+Pongo el 1 que me llevaba.
+(Tercera cifra, ahora agregamos dos 0 al final)
 Fila 2 = 1256 → despl = 125600
 
 # SUMA FINAL
@@ -91,21 +101,25 @@ A = 129
 B = 872
 
 [Paso 0] d = 2
-9×2=18 → 8, c1
-2×2=4+1=5
-1×2=2
+9×2=18 → pongo el 8, me llevo 1
+2×2=4+1=5 → pongo el 5
+1×2=2 → pongo el 2
+(Primera cifra, no ponemos 0 a la derecha)
 Fila 0 = 258 → despl = 258
 
 [Paso 1] d = 7
-9×7=63 → 3, c6
-2×7=14+6=20 → 0, c2
-1×7=7+2=9
+9×7=63 → pongo 3, me llevo 6
+2×7=14+6=20 → pongo 0, me llevo 2
+1×7=7+2=9 pongo el 9
+(Segunda cifra, ponemos un cero)
 Fila 1 = 903 → despl = 9030
 
 [Paso 2] d = 8
-9×8=72 → 2, c7
-2×8=16+7=23 → 3, c2
-1×8=8+2=10 → 0, c1
+9×8=72 → pongo 2, me llevo 7
+2×8=16+7=23 → pongo 3, me llevo 2
+1×8=8+2=10 → pongo 0, me llevo 1
+Pongo el 1.
+(Tercera cifra, ahora ponemos dos 0 a la derecha)
 Fila 2 = 1032 → despl = 103200
 
 # SUMA FINAL
