@@ -2,11 +2,13 @@ FROM nvidia/cuda:12.2.2-devel-ubuntu22.04
 
 RUN apt-get update && apt-get install -y \
     python3 \
-    python3-pip \
+	python3-pip \
+	python3-dev \
+	build-essential \
+	cmake \
+	git \
 	curl \
-    git \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+	&& rm -rf /var/lib/apt/lists/*
 
 ENV CMAKE_ARGS="-DGGML_CUDA=on -DCMAKE_CUDA_ARCHITECTURES=86;89;90"
 RUN pip3 install --no-cache-dir --upgrade pip \
