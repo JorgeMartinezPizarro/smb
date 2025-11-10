@@ -18,15 +18,23 @@ def log(msg):
     print(f"[MAILER] {msg}", flush=True)
 
 
-def safe_decode(payload):
+def safe_decode(payload, fallback=""):
     """Convierte cualquier payload a str de forma segura."""
     if payload is None:
-        return ""
+        return fallback
     if isinstance(payload, bytes):
-        return payload.decode(errors="ignore")
-    if isinstance(payload, str):
+        try:
+            return payload.decode("utf-8", errors="replace")
+        except Exception:
+            return fallback
+    elif isinstance(payload, str):
         return payload
-    return str(payload)
+    else:
+        # Para enteros u otros tipos, los convertimos a string
+        try:
+            return str(payload)
+        except Exception:
+            return fallback
 
 
 def connect_imap():
@@ -65,17 +73,6 @@ def ensure_connection(mail):
         log(f"⚠️ Error en noop(): {e}")
         raise imaplib.IMAP4.abort("Fallo en noop()")
 
-def safe_decode(payload, fallback=""):
-    if isinstance(payload, bytes):
-        try:
-            return payload.decode("utf-8", errors="replace")
-        except Exception:
-            return fallback
-    elif isinstance(payload, str):
-        return payload
-    else:
-        # Por si es int u otro tipo raro
-        return fallback
 
 def fetch_one_unseen_email(mail, max_retries=3):
     """Devuelve (id, remitente, asunto, cuerpo) de un email no leído o None."""
@@ -106,15 +103,19 @@ def fetch_one_unseen_email(mail, max_retries=3):
                 for part in msg.walk():
                     ctype = part.get_content_type()
                     if ctype == "text/plain" and not part.get("Content-Disposition"):
-                        body = safe_decode(part.get_payload(decode=True))
-                        break
+                        payload = part.get_payload(decode=True)
+                        body = safe_decode(payload)
+                        if body:  # Si conseguimos texto plano, lo usamos
+                            break
                 if not body:  # fallback a HTML si no hay texto plano
                     for part in msg.walk():
                         if part.get_content_type() == "text/html":
-                            body = safe_decode(part.get_payload(decode=True))
+                            payload = part.get_payload(decode=True)
+                            body = safe_decode(payload)
                             break
             else:
-                body = safe_decode(msg.get_payload(decode=True))
+                payload = msg.get_payload(decode=True)
+                body = safe_decode(payload)
 
             return num, sender, subject, body
 
@@ -126,6 +127,7 @@ def fetch_one_unseen_email(mail, max_retries=3):
             time.sleep(1)  # espera un segundo antes de reintentar
 
     return None
+
 
 def mark_as_seen(mail, mail_id):
     try:
