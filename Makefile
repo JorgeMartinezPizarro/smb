@@ -4,7 +4,7 @@ ENV_FILE?=.env
 
 include ${ENV_FILE}
 
-DOCKER_CMD=docker compose
+DOCKER_CMD=docker compose --env-file ${ENV_FILE}
 
 build:
 	${DOCKER_CMD} build
