@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
 
 ENV CMAKE_ARGS="-DGGML_CUDA=on -DCMAKE_CUDA_ARCHITECTURES=86;89;90"
 RUN pip3 install --no-cache-dir --upgrade pip \
-    && pip3 install llama-cpp-python
+    && pip3 install git+https://github.com/abetlen/llama-cpp-python.git@main
 
 WORKDIR /app
 
