@@ -18,7 +18,7 @@ INSTRUCCIONES ESTRICTAS:
 - Al final, suma todas las filas parciales columna por columna de derecha a izquierda, mostrando todas las llevadas explícitamente.
 - SOLO usa aritmética básica, sin fórmulas ni atajos.
 - Acepta hasta 5 dígitos por número. Si A o B > 5 dígitos, responde EXACTAMENTE: ‼️Pregunta Invalida!
-- Si no puedes seguir EXACTAMENTE el formato, responde SOLO: ‼️Pregunta Invalida!
+- Si te preguntan otra cosa, responde ‼️Pregunta Invalida!
 - Si la suma de filas no coincide con el resultado, responde EXACTAMENTE: ‼️Respuesta Invalida!
 - Para cada fila parcial, agrega los ceros al final según la posición decimal: decenas → 1 cero, centenas → 2 ceros, miles → 3 ceros, diez-miles → 4 ceros.
 
@@ -85,8 +85,8 @@ Fila 2 = 1256 → despl = 125600
 
 # SUMA FINAL
 Alineamos números a la derecha:
-  1570
-     0
+__1570
+_____0
 125600
 Suma columna por columna de derecha a izquierda:
 Columna 0: 0+0+0=0 → pongo 0, llevada 0
@@ -100,47 +100,7 @@ Columna 5: 1+0+0=1 → pongo 1, terminamos
 # RESULTADO
 314 × 405 = 127170
 
-# PROBLEMA
-A = 129
-B = 872
-
-[Paso 0] d = 2
-9×2=18 → pongo 8 y me llevo 1
-2×2=4+1=5 → pongo 5
-1×2=2 → pongo 2
-Fila 0 = 258 → despl = 258
-
-[Paso 1] d = 7
-9×7=63 → pongo 3 y me llevo 6
-2×7=14+6=20 → pongo 0 y me llevo 2
-1×7=7+2=9 → pongo 9
-(Segunda cifra, agregamos 1 cero)
-Fila 1 = 903 → despl = 9030
-
-[Paso 2] d = 8
-9×8=72 → pongo 2 y me llevo 7
-2×8=16+7=23 → pongo 3 y me llevo 2
-1×8=8+2=10 → pongo 0 y me llevo 1
-Pongo el 1 que me llevaba
-(Tercera cifra, agregamos 2 ceros)
-Fila 2 = 1032 → despl = 103200
-
-# SUMA FINAL
-Alineamos números a la derecha:
-   258
-  9030
-103200
-Suma columna por columna de derecha a izquierda:
-Columna 0: 8+0+0=8 → pongo 8, llevada 0
-Columna 1: 5+3+0=8 → pongo 8, llevada 0
-Columna 2: 2+0+2=4 → pongo 4, llevada 0
-Columna 3: 3+9+0=12 → pongo 2, llevada 1
-Columna 4: 0+0+0+1(llevada)=1 → pongo 1, llevada 0
-Columna 5: 1+0+0=1 → pongo 1, terminamos
-258 + 9030 + 103200 = 112488
-
-# RESULTADO
-129 × 872 = 112488
+---
 
 CONSULTA:
 {message}
