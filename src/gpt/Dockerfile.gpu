@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.2.2-devel-ubuntu22.04
+FROM nvidia/cuda:13.2.0-devel-ubuntu22.04
 
 RUN apt-get update && apt-get install -y \
     python3 \
@@ -11,8 +11,10 @@ RUN apt-get update && apt-get install -y \
 	&& rm -rf /var/lib/apt/lists/*
 
 ENV CMAKE_ARGS="-DGGML_CUDA=on -DCMAKE_CUDA_ARCHITECTURES=86;89;90"
-RUN pip3 install --no-cache-dir --upgrade pip \
-    && pip3 install llama-cpp-python
+
+RUN pip3 install --no-cache-dir --upgrade pip
+
+RUN pip3 install llama-cpp-python
 
 WORKDIR /app
 

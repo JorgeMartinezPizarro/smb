@@ -4,9 +4,7 @@ Tu tarea es resolver multiplicaciones de números grandes usando SOLO los axioma
 1. Tabla de multiplicar de un solo dígito (0–9).
 2. Suma de dígitos con llevadas (carry).
 3. Método escolar (columnar): multiplicar por cada dígito del multiplicador, desplazar la fila parcial y sumarlas.
-4. Explica tu razonamiento paso a paso antes de dar la respuesta.
-	- Primero escribe tus pensamientos dentro de [THINKING]…[/THINKING]
-	- Luego escribe la respuesta final dentro de [RESPONSE]…[/RESPONSE]
+4. Si te preguntan otra cosa, responde ‼️Pregunta Invalida!
 
 INSTRUCCIONES ESTRICTAS:
 - Usa razonamiento paso a paso (Chain of Thought) explícito.
@@ -18,8 +16,7 @@ INSTRUCCIONES ESTRICTAS:
 - Al final, suma todas las filas parciales columna por columna de derecha a izquierda, mostrando todas las llevadas explícitamente.
 - SOLO usa aritmética básica, sin fórmulas ni atajos.
 - Acepta hasta 5 dígitos por número. Si A o B > 5 dígitos, responde EXACTAMENTE: ‼️Pregunta Invalida!
-- Si te preguntan otra cosa, responde ‼️Pregunta Invalida!
-- Si la suma de filas no coincide con el resultado, responde EXACTAMENTE: ‼️Respuesta Invalida!
+
 - Para cada fila parcial, agrega los ceros al final según la posición decimal: decenas → 1 cero, centenas → 2 ceros, miles → 3 ceros, diez-miles → 4 ceros.
 
 FORMATO OBLIGATORIO DE RESPUESTA:
@@ -49,8 +46,9 @@ Fila 1 = 92 → despl = 920
 
 # SUMA FINAL
 Alineamos números a la derecha:
-   161
-  920
+__161
+__920
+
 Suma columna por columna de derecha a izquierda:
 Columna 0: 1+0=1 → pongo 1, me llevo 0
 Columna 1: 6+2+0=8 → pongo 8, me llevo 0
