@@ -75,7 +75,6 @@ def ensure_connection(mail):
 
 
 def fetch_one_unseen_email(mail, max_retries=3):
-    """Devuelve (id, remitente, asunto, cuerpo) de un email no leído o None."""
     retries = 0
     while retries < max_retries:
         try:
@@ -89,12 +88,23 @@ def fetch_one_unseen_email(mail, max_retries=3):
                 return None
 
             num = mail_ids[0]
-            status, data = mail.fetch(num, "(RFC822)")
-            if status != "OK" or not data or not data[0]:
+            status, fetch_data = mail.fetch(num, "(RFC822)")
+            if status != "OK" or not fetch_data:
                 log(f"❌ Error al obtener email ID {num}")
                 return None
 
-            msg = email.message_from_bytes(data[0][1])
+            # FIX: filtrar solo tuplas con bytes, ignorar ints y otros artefactos del protocolo
+            raw_email = None
+            for item in fetch_data:
+                if isinstance(item, tuple) and len(item) >= 2 and isinstance(item[1], bytes):
+                    raw_email = item[1]
+                    break
+
+            if raw_email is None:
+                log(f"❌ No se encontraron bytes válidos en la respuesta IMAP para ID {num}")
+                return None
+
+            msg = email.message_from_bytes(raw_email)
             sender = msg.get("From", "")
             subject = msg.get("Subject", "")
 

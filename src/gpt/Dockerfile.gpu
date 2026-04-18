@@ -12,6 +12,8 @@ RUN apt-get update && apt-get install -y \
 
 ENV CMAKE_ARGS="-DGGML_CUDA=on -DCMAKE_CUDA_ARCHITECTURES=86;89;90"
 
+ENV MAKEFLAGS="-j$(nproc)"
+
 RUN pip3 install --no-cache-dir --upgrade pip
 
 RUN pip3 install llama-cpp-python
