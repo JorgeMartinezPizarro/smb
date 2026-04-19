@@ -32,7 +32,10 @@ WIKIPEDIA_MAX_CONTENT = int(os.getenv("WIKIPEDIA_MAX_CONTENT", "12000"))   # Max
 WIKIPEDIA_LANG = os.getenv("WIKIPEDIA_LANG", "en")                         # Default language
 WIKIPEDIA_MIN_SECTION = int(os.getenv("WIKIPEDIA_MIN_SECTION", "200"))     # Min section length to consider
 WIKIPEDIA_BATCH_SIZE = int(os.getenv("WIKIPEDIA_BATCH_SIZE", "32"))        # Embedding batch size
-WIKIPEDIA_THRESHOLD = float(os.getenv("WIKIPEDIA_THRESHOLD", "0.5"))     # Threshold
+WIKIPEDIA_THRESHOLD = float(os.getenv("WIKIPEDIA_THRESHOLD", "0.5"))       # Threshold
+WIKIPEDIA_CACHE_TTL = int(os.getenv("WIKIPEDIA_CACHE_TTL", "86400"))       # Cache TTL in seconds (default: 1 day)
+WIKIPEDIA_FALLBACK_LANGS = os.getenv("WIKIPEDIA_FALLBACK_LANGS", "es,en")  # Comma-separated fallback langs
+WIKIPEDIA_MAX_SEARCH_RESULTS = int(os.getenv("WIKIPEDIA_MAX_SEARCH_RESULTS", "5"))  # Max search candidates
 TIMEOUT = int(os.getenv("TIMEOUT", "600"))     # GPT Request timeout
 
 # Email settings
@@ -293,15 +296,135 @@ def extract_name_from_message(message):
 
 # --- Wikipedia Processing ---
 
-def get_cached_wikipedia(subject, lang=WIKIPEDIA_LANG):
-	safe_subject = subject.replace("/", "_").replace(" ", "_")
-	cache_file = os.path.join(CACHE_DIR, f"{safe_subject}.npz")
+def normalize_subject(subject):
+	"""
+	Normalize a subject string for more reliable Wikipedia lookups.
+	Strips common filler words, normalizes unicode, and title-cases.
+	"""
+	# Normalize unicode (e.g., accents)
+	subject = unicodedata.normalize("NFKC", subject)
+	# Remove common email subject prefixes
+	subject = re.sub(r"^(re|fwd|fw|asunto|pregunta|duda sobre|consulta sobre)[:\s]+", "", subject, flags=re.IGNORECASE)
+	# Remove excessive punctuation and whitespace
+	subject = re.sub(r"[^\w\s\-áéíóúñüÁÉÍÓÚÑÜ]", " ", subject)
+	subject = re.sub(r"\s+", " ", subject).strip()
+	return subject.title()
 
-	if os.path.exists(cache_file):
-		data = np.load(cache_file, allow_pickle=True)
-		chunks = data["chunks"].tolist()
-		embeddings = data["embeddings"]
-		return chunks, embeddings
+
+def is_cache_valid(cache_file):
+	"""Check if cache file exists and is within TTL."""
+	if not os.path.exists(cache_file):
+		return False
+	age = time.time() - os.path.getmtime(cache_file)
+	return age < WIKIPEDIA_CACHE_TTL
+
+
+def search_wikipedia_candidates(subject, lang, max_results=WIKIPEDIA_MAX_SEARCH_RESULTS):
+	"""
+	Search Wikipedia for candidate page titles.
+	Returns a list of (title, snippet) tuples ranked by search relevance.
+	"""
+	search_url = f"https://{lang}.wikipedia.org/w/api.php"
+	params = {
+		"action": "query",
+		"list": "search",
+		"srsearch": subject,
+		"srlimit": max_results,
+		"srprop": "snippet|titlesnippet",
+		"format": "json"
+	}
+	try:
+		resp = requests.get(search_url, params=params, timeout=10)
+		if resp.status_code == 200:
+			results = resp.json().get("query", {}).get("search", [])
+			return [(r["title"], r.get("snippet", "")) for r in results]
+	except Exception as e:
+		logging.warning(f"Wikipedia candidate search failed for '{subject}' in '{lang}': {e}")
+	return []
+
+
+def get_wikipedia_page(subject, lang=WIKIPEDIA_LANG):
+	"""
+	Retrieve the best Wikipedia page for a subject.
+
+	Strategy:
+	  1. Direct lookup by exact title.
+	  2. API search for up to WIKIPEDIA_MAX_SEARCH_RESULTS candidates; pick the
+	     one whose title or snippet best matches the subject (simple token overlap).
+	  3. If configured, fall back to alternative languages.
+	"""
+	wiki_clients = {}
+
+	def get_wiki_client(l):
+		if l not in wiki_clients:
+			wiki_clients[l] = wikipediaapi.Wikipedia(
+				user_agent="knowledge-bot/1.0",
+				language=l,
+				extract_format=wikipediaapi.ExtractFormat.WIKI,
+			)
+		return wiki_clients[l]
+
+	def score_candidate(title, snippet, query):
+		"""Simple token-overlap score between query and title+snippet."""
+		query_tokens = set(re.findall(r"\w+", query.lower()))
+		target_tokens = set(re.findall(r"\w+", (title + " " + snippet).lower()))
+		if not query_tokens:
+			return 0.0
+		return len(query_tokens & target_tokens) / len(query_tokens)
+
+	langs_to_try = [lang] + [
+		l.strip() for l in WIKIPEDIA_FALLBACK_LANGS.split(",")
+		if l.strip() and l.strip() != lang
+	]
+
+	for current_lang in langs_to_try:
+		wiki = get_wiki_client(current_lang)
+
+		# 1. Direct lookup
+		page = wiki.page(subject)
+		if page.exists():
+			logging.info(f"Wikipedia direct hit: '{subject}' in '{current_lang}'")
+			return page
+
+		# 2. Search-based lookup
+		candidates = search_wikipedia_candidates(subject, current_lang)
+		if candidates:
+			scored = sorted(
+				candidates,
+				key=lambda c: score_candidate(c[0], c[1], subject),
+				reverse=True,
+			)
+			logging.info(
+				f"Wikipedia candidates for '{subject}' in '{current_lang}': "
+				+ ", ".join(t for t, _ in scored[:3])
+			)
+			for title, _ in scored:
+				page = wiki.page(title)
+				if page.exists():
+					logging.info(f"Wikipedia search hit: '{title}' in '{current_lang}'")
+					return page
+
+	logging.warning(f"No Wikipedia page found for '{subject}' in any language.")
+	return None
+
+
+def get_cached_wikipedia(subject, lang=WIKIPEDIA_LANG):
+	"""
+	Return (chunks, embeddings) for a subject, using disk cache when valid.
+	Cache is invalidated after WIKIPEDIA_CACHE_TTL seconds.
+	"""
+	safe_subject = re.sub(r"[^\w\-]", "_", subject)
+	cache_file = os.path.join(CACHE_DIR, f"{lang}_{safe_subject}.npz")
+
+	if is_cache_valid(cache_file):
+		try:
+			data = np.load(cache_file, allow_pickle=True)
+			chunks = data["chunks"].tolist()
+			embeddings = data["embeddings"]
+			logging.info(f"Wikipedia cache hit: '{subject}' ({len(chunks)} chunks)")
+			return chunks, embeddings
+		except Exception as e:
+			logging.warning(f"Cache load failed for '{subject}': {e}. Re-fetching.")
 
 	page = get_wikipedia_page(subject, lang)
 	if not page or not page.exists():
@@ -312,52 +435,29 @@ def get_cached_wikipedia(subject, lang=WIKIPEDIA_LANG):
 	chunks = []
 	for title, text in sections:
 		if len(text) > WIKIPEDIA_CHUNK_SIZE:
-			# solo partir si es enorme
 			for chunk in chunk_text(text, WIKIPEDIA_CHUNK_SIZE):
 				chunks.append(f"{title}\n{chunk}")
 		else:
-			# sección completa como un solo chunk
 			chunks.append(f"{title}\n{text}")
+
+	if not chunks:
+		return [], np.array([])
 
 	embeddings = []
 	for i in range(0, len(chunks), WIKIPEDIA_BATCH_SIZE):
-		batch = chunks[i:i+WIKIPEDIA_BATCH_SIZE]
+		batch = chunks[i:i + WIKIPEDIA_BATCH_SIZE]
 		emb = model_embed.encode(batch, convert_to_numpy=True)
 		emb /= (np.linalg.norm(emb, axis=1, keepdims=True) + 1e-10)
 		embeddings.append(emb)
 	embeddings = np.vstack(embeddings)
 
-	np.savez_compressed(cache_file, chunks=np.array(chunks), embeddings=embeddings)
+	try:
+		np.savez_compressed(cache_file, chunks=np.array(chunks), embeddings=embeddings)
+	except Exception as e:
+		logging.warning(f"Cache save failed for '{subject}': {e}")
+
 	return chunks, embeddings
 
-def get_wikipedia_page(subject, lang=WIKIPEDIA_LANG):
-	"""Retrieve Wikipedia page with fallback to search"""
-	wiki = wikipediaapi.Wikipedia(
-		user_agent='knowledge-bot/1.0',
-		language=lang,
-		extract_format=wikipediaapi.ExtractFormat.WIKI
-	)
-	page = wiki.page(subject)
-	if page.exists():
-		return page
-	
-	# Fallback to search
-	try:
-		search_url = f"https://{lang}.wikipedia.org/w/api.php"
-		params = {
-			"action": "query",
-			"list": "search",
-			"srsearch": subject,
-			"format": "json"
-		}
-		resp = requests.get(search_url, params=params)
-		if resp.status_code == 200:
-			first_title = resp.json().get("query", {}).get("search", [{}])[0].get("title")
-			if first_title:
-				return wiki.page(first_title)
-	except Exception as e:
-		logging.warning(f"Wikipedia search failed: {e}")
-	return None
 
 def clean_wikipedia_text(text):
 	"""Normalize and clean Wikipedia text"""
@@ -369,33 +469,61 @@ def clean_wikipedia_text(text):
 	text = re.sub(r' *\n+ *', '\n\n', text)
 	return re.sub(r'[ ]{2,}', ' ', text).strip()
 
-def chunk_text(text, max_chars=WIKIPEDIA_CHUNK_SIZE, overlap=int(WIKIPEDIA_CHUNK_SIZE/5)):
-	"""Split text into semantically coherent chunks with overlap."""
+
+def chunk_text(text, max_chars=WIKIPEDIA_CHUNK_SIZE, overlap=None):
+	"""
+	Split text into semantically coherent chunks with overlap.
+	Overlap defaults to 20% of max_chars.
+	"""
+	if overlap is None:
+		overlap = max(0, max_chars // 5)
+
 	paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
 	chunks = []
 	current_chunk = ""
-	
+
 	for p in paragraphs:
 		if len(current_chunk) + len(p) + 2 <= max_chars:
-			current_chunk += (p + "\n\n")
+			current_chunk += p + "\n\n"
 		else:
 			if current_chunk:
 				chunks.append(current_chunk.strip())
-				# Añadir solapamiento: tomar los últimos `overlap` caracteres
-				overlap_text = current_chunk[-overlap:]
+				overlap_text = current_chunk[-overlap:] if overlap else ""
 				current_chunk = overlap_text + p + "\n\n"
 			else:
-				# Caso especial: párrafo demasiado grande, se fuerza chunk solo con ese párrafo
-				chunks.append(p)
-				current_chunk = ""
-	
+				# Paragraph too large on its own: hard-split by sentences
+				sentences = re.split(r"(?<=[.!?])\s+", p)
+				sentence_buf = ""
+				for sent in sentences:
+					if len(sentence_buf) + len(sent) + 1 <= max_chars:
+						sentence_buf += sent + " "
+					else:
+						if sentence_buf:
+							chunks.append(sentence_buf.strip())
+						sentence_buf = sent + " "
+				if sentence_buf:
+					current_chunk = sentence_buf
+
 	if current_chunk:
 		chunks.append(current_chunk.strip())
-	return chunks
-	
+
+	return [c for c in chunks if c]
+
+
 def extract_relevant_sections(page):
-	"""Extrae secciones de la página de Wikipedia (sin prioridad hardcodeada)."""
+	"""Extract all sections from a Wikipedia page."""
 	sections = []
+
+	# Include the page summary (top-level text) if substantial
+	summary = clean_wikipedia_text(page.text)
+	# page.text for wikipedia-api is the full page text; extract only the intro
+	# by taking text up to the first section boundary (double newline after a sentence).
+	intro_match = re.match(r"((?:.|\n){50,800}?)(?=\n\n[A-ZÁÉÍÓÚ])", summary)
+	if intro_match:
+		intro = intro_match.group(1).strip()
+		if len(intro) >= WIKIPEDIA_MIN_SECTION:
+			sections.append(("Introducción", intro))
+
 	def process_section(section, parent_title=""):
 		full_title = f"{parent_title} > {section.title}" if parent_title else section.title
 		text = clean_wikipedia_text(section.text)
@@ -403,10 +531,17 @@ def extract_relevant_sections(page):
 			sections.append((full_title, text))
 		for subsection in section.sections:
 			process_section(subsection, full_title)
-	process_section(page)
+
+	for section in page.sections:
+		process_section(section)
+
 	return sections
 
+
 def filter_redundant_chunks(chunks, threshold=0.85):
+	"""Remove near-duplicate chunks using cosine similarity."""
+	if not chunks:
+		return []
 	embeddings = model_embed.encode(chunks, convert_to_numpy=True)
 	filtered_chunks = []
 	filtered_embeds = []
@@ -416,7 +551,6 @@ def filter_redundant_chunks(chunks, threshold=0.85):
 			filtered_chunks.append(chunks[i])
 			filtered_embeds.append(emb)
 			continue
-		
 		sims = cosine_similarity([emb], filtered_embeds)[0]
 		if max(sims) < threshold:
 			filtered_chunks.append(chunks[i])
@@ -424,38 +558,102 @@ def filter_redundant_chunks(chunks, threshold=0.85):
 
 	return filtered_chunks
 
+
+def expand_query(subject, body):
+	"""
+	Generate multiple query variants to improve retrieval recall.
+	Combines the subject and key phrases from the body.
+	"""
+	queries = [body]
+
+	# Add subject as an additional query signal
+	if subject and subject.lower() not in body.lower():
+		queries.append(subject)
+
+	# Add a combined query
+	if subject:
+		queries.append(f"{subject}: {body[:200]}")
+
+	# Extract potential named entities / key noun phrases (simple heuristic)
+	key_phrases = re.findall(r"\b[A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]+(?:\s+[A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]+)*\b", body)
+	if key_phrases:
+		queries.append(" ".join(key_phrases[:5]))
+
+	return list(dict.fromkeys(queries))  # deduplicate preserving order
+
+
 def get_wikipedia_context(subject, query, lang=WIKIPEDIA_LANG):
-	chunks, embeddings = get_cached_wikipedia(subject, lang)
+	"""
+	Retrieve the most relevant Wikipedia chunks for a subject+query pair.
+
+	Improvements over the original:
+	  - Subject normalization before lookup.
+	  - Multi-query expansion for better recall.
+	  - Aggregated FAISS scores across query variants.
+	  - Cross-encoder reranking on the merged candidate pool.
+	  - Redundancy filtering before final selection.
+	  - Graceful fallback with informative messages.
+	"""
+	normalized_subject = normalize_subject(subject)
+	chunks, embeddings = get_cached_wikipedia(normalized_subject, lang)
+
+	# If normalized subject fails, try raw subject as fallback
+	if not chunks and normalized_subject != subject:
+		logging.info(f"Retrying Wikipedia fetch with raw subject: '{subject}'")
+		chunks, embeddings = get_cached_wikipedia(subject, lang)
 
 	if not chunks:
-		return f"No Wikipedia information found about '{subject}'"
+		return f"No se encontró información en Wikipedia sobre '{subject}'."
 
-	# Query embedding
-	query_embed = model_embed.encode([query], convert_to_numpy=True)[0]
-	query_embed /= (np.linalg.norm(query_embed) + 1e-10)
+	logging.info(f"Wikipedia context: {len(chunks)} chunks available for '{normalized_subject}'")
 
-	# FAISS search
+	# Build FAISS index
 	index = faiss.IndexFlatIP(embeddings.shape[1])
 	index.add(embeddings)
-	k = min(WIKIPEDIA_TOP_K * 3, len(chunks))
-	distances, indices = index.search(query_embed.reshape(1, -1), k)
 
-	# Rerank con cross-encoder
-	candidates = [(chunks[i], distances[0][j]) for j, i in enumerate(indices[0])]
-	cross_scores = reranker.predict([(query, c[0]) for c in candidates], batch_size=16)
+	# Multi-query expansion
+	query_variants = expand_query(normalized_subject, query)
+	logging.info(f"Query variants: {query_variants}")
 
-	scored_chunks = sorted(
-		zip((c[0] for c in candidates), cross_scores),
-		key=lambda x: x[1],
-		reverse=True
-	)
+	# Aggregate scores across all query variants
+	k = min(WIKIPEDIA_TOP_K * 4, len(chunks))
+	chunk_scores = {}  # chunk_idx -> max score across variants
 
-	# Filtrar redundancias
-	filtered_chunks = filter_redundant_chunks(
-		[chunk for chunk, _ in scored_chunks], threshold=0.85
-	)
+	for variant in query_variants:
+		q_emb = model_embed.encode([variant], convert_to_numpy=True)[0]
+		q_emb /= (np.linalg.norm(q_emb) + 1e-10)
+		distances, indices = index.search(q_emb.reshape(1, -1), k)
+		for dist, idx in zip(distances[0], indices[0]):
+			# Keep the best (max) score for each chunk across variants
+			chunk_scores[idx] = max(chunk_scores.get(idx, -1.0), float(dist))
 
-	# Selección final
+	# Sort candidates by aggregated score
+	sorted_candidates = sorted(chunk_scores.items(), key=lambda x: x[1], reverse=True)
+	top_indices = [idx for idx, _ in sorted_candidates[:k]]
+	candidate_chunks = [chunks[i] for i in top_indices]
+
+	if not candidate_chunks:
+		return f"No se encontró contenido relevante en Wikipedia para '{subject}'."
+
+	# Cross-encoder reranking against the primary query
+	try:
+		cross_scores = reranker.predict(
+			[(query, c) for c in candidate_chunks], batch_size=16
+		)
+		scored_chunks = sorted(
+			zip(candidate_chunks, cross_scores),
+			key=lambda x: x[1],
+			reverse=True,
+		)
+		reranked_chunks = [chunk for chunk, _ in scored_chunks]
+	except Exception as e:
+		logging.warning(f"Reranker failed, falling back to FAISS order: {e}")
+		reranked_chunks = candidate_chunks
+
+	# Redundancy filtering
+	filtered_chunks = filter_redundant_chunks(reranked_chunks, threshold=0.85)
+
+	# Final selection within content budget
 	selected_chunks = []
 	total_chars = 0
 	for chunk in filtered_chunks[:WIKIPEDIA_TOP_K]:
@@ -464,7 +662,12 @@ def get_wikipedia_context(subject, query, lang=WIKIPEDIA_LANG):
 		selected_chunks.append(chunk)
 		total_chars += len(chunk)
 
-	return "\n\n".join(selected_chunks) if selected_chunks else "No relevant content found"
+	if not selected_chunks:
+		return f"No se encontró contenido relevante en Wikipedia para '{subject}'."
+
+	logging.info(f"Wikipedia context: {len(selected_chunks)} chunks selected ({total_chars} chars)")
+	return "\n\n".join(selected_chunks)
+
 
 # --- Email Processing ---
 
