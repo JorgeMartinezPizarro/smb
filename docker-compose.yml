@@ -11,6 +11,7 @@ x-llama-env: &llama-env
   LLAMA_ARG_JINJA: 1
   LLAMA_ARG_THINK: deepseek
   LLAMA_ARG_REASONING: ${LLM_REASONING:-auto}
+  LLAMA_ARG_REASONING_EFFORT: ${LLM_REASONING_EFFORT:-default}
   # Text only: don't download nor load the image projector of multimodal models
   LLAMA_ARG_MMPROJ_AUTO: "false"
 

@@ -9,7 +9,7 @@ from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
 
-from rag import env, faq_hits, wikipedia_hits, normalize_subject, strip_reply_prefixes
+from rag import env, faq_hits, wikipedia_hits, normalize_subject, strip_reply_prefixes, load_models
 
 app = Flask(__name__)
 
@@ -583,6 +583,15 @@ def api_process_email():
 		logging.error(f"API error: {e}")
 		return jsonify({"error": str(e)}), 500
 
+def preload_models():
+	"""Load the retrieval models at startup if the current prompt needs them, otherwise on first use"""
+	try:
+		if re.search(r"\{(wikipedia|context)\}", get_prompt_template()):
+			load_models()
+	except Exception as e:
+		logging.warning(f"Could not preload retrieval models: {e}")
+
 if __name__ == "__main__":
 	init_db()
+	preload_models()
 	app.run(host="0.0.0.0", port=5000)

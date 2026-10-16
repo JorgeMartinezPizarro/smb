@@ -10,6 +10,7 @@
 | `BATCH_SIZE` | `--batch-size` |
 | `GPU_LAYERS` | `--n-gpu-layers` (`gpu` profile, `0` on `cpu`) |
 | `LLM_REASONING` | `--reasoning` (`on`, `off`, `auto`) |
+| `LLM_REASONING_EFFORT` | `--reasoning-effort` (`low`, `medium`, `high`, `default`) |
 
 Always set: `--jinja`, `--reasoning-format deepseek` (thinking goes to the 🧠 card of the email, not to the history), `--no-mmproj` (text only) and `--parallel 1`.
 

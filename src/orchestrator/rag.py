@@ -5,15 +5,13 @@ Both sources share one pipeline, wrapped by `Corpus`:
 chunk -> embed -> cache -> multi-query FAISS -> rerank -> threshold -> dedupe -> budgeted selection.
 """
 
-import hashlib, logging, os, re, time, unicodedata
+import hashlib, logging, os, re, threading, time, unicodedata
 from dataclasses import dataclass
 
 import faiss
 import numpy as np
 import requests
-import torch
 import wikipediaapi
-from sentence_transformers import SentenceTransformer, CrossEncoder
 
 
 def env(name, default):
@@ -58,14 +56,31 @@ PASSAGE_PREFIX = "passage: " if _E5 else ""
 # Cache files carry the embedder name so switching EMBED_MODEL invalidates them.
 MODEL_TAG = re.sub(r"[^\w.\-]", "-", EMBED_MODEL.split("/")[-1])
 
-logging.info(f"Loading embedder '{EMBED_MODEL}' and reranker '{RERANK_MODEL}'")
-embedder = SentenceTransformer(EMBED_MODEL)
-embedder.max_seq_length = EMBED_MAX_LENGTH
-reranker = CrossEncoder(RERANK_MODEL, max_length=RERANK_MAX_LENGTH)
+_models = None  # (embedder, reranker)
+_models_lock = threading.Lock()
+
+
+def load_models():
+	"""
+	Embedder and reranker, loaded on first use: an instance whose prompt has no {wikipedia}
+	or {context} never imports torch nor loads them (~5GB of RAM).
+	"""
+	global _models
+	with _models_lock:
+		if _models is None:
+			from sentence_transformers import SentenceTransformer, CrossEncoder
+			logging.info(f"Loading embedder '{EMBED_MODEL}' and reranker '{RERANK_MODEL}'")
+			start = time.time()
+			embedder = SentenceTransformer(EMBED_MODEL)
+			embedder.max_seq_length = EMBED_MAX_LENGTH
+			_models = (embedder, CrossEncoder(RERANK_MODEL, max_length=RERANK_MAX_LENGTH))
+			logging.info(f"Models loaded in {time.time() - start:.1f}s")
+	return _models
 
 
 def embed(texts, prefix=""):
 	"""L2-normalised embeddings, so inner product == cosine similarity."""
+	embedder, _ = load_models()
 	return embedder.encode(
 		[prefix + t for t in texts], batch_size=EMBED_BATCH_SIZE,
 		convert_to_numpy=True, normalize_embeddings=True, show_progress_bar=False,
@@ -77,6 +92,8 @@ def rerank(queries, texts):
 	Cross-encoder relevance in [0, 1] of each text: the best over queries, so every question of a
 	multi-question email counts. Sigmoid of the raw logit, whatever the model's default activation.
 	"""
+	import torch
+	_, reranker = load_models()
 	logits = reranker.predict(
 		[(q, t) for q in queries for t in texts], batch_size=16,
 		activation_fn=torch.nn.Identity(), convert_to_numpy=True, show_progress_bar=False,
