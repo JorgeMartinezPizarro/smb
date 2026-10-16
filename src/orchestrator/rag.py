@@ -68,17 +68,21 @@ def embed(texts, prefix=""):
 	"""L2-normalised embeddings, so inner product == cosine similarity."""
 	return embedder.encode(
 		[prefix + t for t in texts], batch_size=EMBED_BATCH_SIZE,
-		convert_to_numpy=True, normalize_embeddings=True,
+		convert_to_numpy=True, normalize_embeddings=True, show_progress_bar=False,
 	).astype(np.float32)
 
 
-def rerank(query, texts):
-	"""Cross-encoder relevance in [0, 1]: sigmoid of the raw logit, whatever the model's default activation."""
+def rerank(queries, texts):
+	"""
+	Cross-encoder relevance in [0, 1] of each text: the best over queries, so every question of a
+	multi-question email counts. Sigmoid of the raw logit, whatever the model's default activation.
+	"""
 	logits = reranker.predict(
-		[(query, t) for t in texts], batch_size=16,
-		activation_fn=torch.nn.Identity(), convert_to_numpy=True,
+		[(q, t) for q in queries for t in texts], batch_size=16,
+		activation_fn=torch.nn.Identity(), convert_to_numpy=True, show_progress_bar=False,
 	)
-	return 1.0 / (1.0 + np.exp(-np.asarray(logits, dtype=np.float32)))
+	logits = np.asarray(logits, dtype=np.float32).reshape(len(queries), len(texts)).max(axis=0)
+	return 1.0 / (1.0 + np.exp(-logits))
 
 
 # --- Corpus abstraction ---
@@ -132,10 +136,10 @@ class Corpus:
 			logging.warning(f"{name}: cache save failed: {e}")
 		return corpus
 
-	def search(self, queries, rerank_query, top_k, threshold=0.0, max_chars=None):
+	def search(self, queries, rerank_queries, top_k, threshold=0.0, max_chars=None):
 		"""
 		Recall candidates with every query variant (best FAISS score per chunk), rerank them
-		against rerank_query, drop those below threshold and near-duplicates, and return up to
+		against rerank_queries, drop those below threshold and near-duplicates, and return up to
 		top_k hits within max_chars, best first.
 		"""
 		if not queries:
@@ -150,7 +154,7 @@ class Corpus:
 		candidates = sorted(best, key=best.get, reverse=True)[:k]
 
 		try:
-			scores = rerank(rerank_query, [self.chunks[i] for i in candidates])
+			scores = rerank(rerank_queries, [self.chunks[i] for i in candidates])
 		except Exception as e:
 			logging.warning(f"{self.name}: reranker failed, using embedding similarity: {e}")
 			scores = [best[i] for i in candidates]
@@ -217,12 +221,17 @@ def chunk_faq(text):
 	return chunks
 
 
+def questions(body, limit=3):
+	"""The first question sentences of the message."""
+	return [q.strip() for q in re.findall(r"[^.!?\n]*\?", body) if len(q.strip()) > 10][:limit]
+
+
 def expand_queries(body, subject=""):
 	"""Query variants for recall: body, subject, subject+body, each question, capitalised key phrases."""
 	queries = [body]
 	if subject:
 		queries += [subject, f"{subject}: {body[:200]}"]
-	queries += [q.strip() for q in re.findall(r"[^.!?\n]*\?", body) if len(q.strip()) > 10][:3]
+	queries += questions(body)
 	key_phrases = re.findall(r"\b[A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]+(?:\s+[A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]+)*\b", body)
 	if key_phrases:
 		queries.append(" ".join(key_phrases[:5]))
@@ -248,7 +257,9 @@ def faq_hits(body):
 		key = f"{os.path.basename(FAQ_FILE)}_{digest}"
 		_faq = (digest, Corpus.load("FAQ", cache_path(FAQ_CACHE_DIR, key), lambda: chunk_faq(text)))
 	corpus = _faq[1]
-	return corpus.search(expand_queries(body), body, FAQ_TOP_K, FAQ_THRESHOLD) if corpus else []
+	if not corpus:
+		return []
+	return corpus.search(expand_queries(body), [body] + questions(body), FAQ_TOP_K, FAQ_THRESHOLD)
 
 
 # --- Wikipedia ---
@@ -324,12 +335,14 @@ def get_wikipedia_page(subject, lang=WIKIPEDIA_LANG):
 
 		candidates = search_wikipedia_candidates(subject, current_lang)
 		if candidates:
-			scored = sorted(candidates, key=lambda c: score_candidate(c[0], c[1], subject), reverse=True)
+			scored = sorted(((score_candidate(t, s, subject), t) for t, s in candidates), reverse=True)
 			logging.info(
 				f"Wikipedia candidates for '{subject}' in '{current_lang}': "
-				+ ", ".join(t for t, _ in scored[:3])
+				+ ", ".join(f"{t} ({score:.2f})" for score, t in scored[:3])
 			)
-			for title, _ in scored:
+			for score, title in scored:
+				if score == 0:
+					break  # unrelated results (e.g. a Spanish subject on en.wikipedia): try the next language
 				page = wiki.page(title)
 				if page.exists():
 					logging.info(f"Wikipedia search hit: '{title}' in '{current_lang}'")
@@ -395,7 +408,8 @@ def wikipedia_hits(subject, body):
 	if not corpus:
 		return []
 	# The subject names the topic; the body alone ("¿cuándo nació?") may not.
-	rerank_query = body if normalized.lower() in body.lower() else f"{normalized}: {body}"
+	prefix = "" if normalized.lower() in body.lower() else f"{normalized}: "
+	rerank_queries = [prefix + q for q in [body] + questions(body)]
 	return corpus.search(
-		expand_queries(body, normalized), rerank_query, WIKIPEDIA_TOP_K, WIKIPEDIA_THRESHOLD, WIKIPEDIA_MAX_CONTENT
+		expand_queries(body, normalized), rerank_queries, WIKIPEDIA_TOP_K, WIKIPEDIA_THRESHOLD, WIKIPEDIA_MAX_CONTENT
 	)
