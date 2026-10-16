@@ -1,65 +1,43 @@
+# llama.cpp server settings shared by gpt-cpu and gpt-gpu.
+# Sampling (TEMPERATURE, TOP_P, ...) is sent per request by the orchestrator.
+x-llama-env: &llama-env
+  LLAMA_CACHE: /models
+  LLAMA_ARG_HF_REPO: ${LLM_REPO}
+  LLAMA_ARG_HF_FILE: ${LLM_NAME}
+  LLAMA_ARG_CTX_SIZE: ${MAX_PROMPT_LENGTH}
+  LLAMA_ARG_THREADS: ${NUM_THREADS}
+  LLAMA_ARG_BATCH: ${BATCH_SIZE}
+  LLAMA_ARG_N_PARALLEL: 1
+  LLAMA_ARG_JINJA: 1
+  LLAMA_ARG_THINK: deepseek
+
+x-llama: &llama
+  volumes:
+    - ./cache/models:/models
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+    interval: 20s
+    timeout: 10s
+    retries: 10
+    # The first start downloads the model, give it time.
+    start_period: 30m
+
 services:
   gpt-cpu:
-    image: ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-cpu:${IMAGE_TAG}
+    <<: *llama
+    image: ghcr.io/ggml-org/llama.cpp:server-${LLAMA_CPP_BUILD:-b11347}
     profiles: ["cpu"]
-    ulimits:
-      memlock: -1
-    build:
-      context: ./src/gpt
-      dockerfile: Dockerfile.cpu
     cpus: ${NUM_THREADS}
     environment:
-      - NUM_THREADS=${NUM_THREADS}
-      - MAX_PROMPT_LENGTH=${MAX_PROMPT_LENGTH}
-      - MAX_TOKENS=${MAX_TOKENS}
-      - GPU_LAYERS=${GPU_LAYERS}
-      - LLM_REPO=${LLM_REPO}
-      - TOP_K=${TOP_K}
-      - TOP_P=${TOP_P}
-      - TEMPERATURE=${TEMPERATURE}
-      - LLM_NAME=${LLM_NAME}
-      - USE_GPU=false
-      - BATCH_SIZE=${BATCH_SIZE}
-      - REPETITION_PENALTY=${REPETITION_PENALTY}
-    volumes:
-      - ./cache/models:/app/models
-      - ./cache/cache:/root/.cache/llama_cpp
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 20s
-      timeout: 10s
-      retries: 10
-      start_period: 60s
+      <<: *llama-env
+      LLAMA_ARG_N_GPU_LAYERS: 0
   gpt-gpu:
-    image: ${REGISTRY_USER}/${REGISTRY_REPO}-gpt-gpu:${IMAGE_TAG}
-    build:
-      context: ./src/gpt
-      dockerfile: Dockerfile.gpu
+    <<: *llama
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda-${LLAMA_CPP_BUILD:-b11347}
     profiles: ["gpu"]
-    ulimits:
-      memlock: -1
     environment:
-      LLM_REPO: ${LLM_REPO}
-      LLM_NAME: ${LLM_NAME}
-      USE_GPU: "true"
-      USE_CUDA: "cuda"
-      MAX_PROMPT_LENGTH: ${MAX_PROMPT_LENGTH}
-      MAX_TOKENS: ${MAX_TOKENS}
-      GPU_LAYERS: ${GPU_LAYERS}
-      TOP_K: ${TOP_K}
-      TOP_P: ${TOP_P}
-      TEMPERATURE: ${TEMPERATURE}
-      REPETITION_PENALTY: ${REPETITION_PENALTY}
-      GGML_CUDA: "1"
-      BATCH_SIZE: ${BATCH_SIZE}
-      NUM_THREADS: ${NUM_THREADS}
-    volumes:
-      - ./cache/models:/app/models
-      - ./cache/cache:/root/.cache/llama_cpp
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
-      retries: 3
+      <<: *llama-env
+      LLAMA_ARG_N_GPU_LAYERS: ${GPU_LAYERS}
     deploy:
       resources:
         reservations:
@@ -86,9 +64,23 @@ services:
     image: ${REGISTRY_USER}/${REGISTRY_REPO}-orchestrator:${IMAGE_TAG}
     build:
       context: ./src/orchestrator
+    depends_on:
+      # Only the service of the active profile exists, the other one is skipped.
+      gpt-cpu:
+        condition: service_healthy
+        required: false
+      gpt-gpu:
+        condition: service_healthy
+        required: false
     environment:
       - DB_PATH=/data/db.sqlite
       - GPT_SERVICE=${GPT_SERVICE}
+      - LLM_BASE_URL=${LLM_BASE_URL:-http://${GPT_SERVICE}:8080/v1}
+      - MAX_TOKENS=${MAX_TOKENS}
+      - TEMPERATURE=${TEMPERATURE}
+      - TOP_P=${TOP_P}
+      - TOP_K=${TOP_K}
+      - REPETITION_PENALTY=${REPETITION_PENALTY}
       - BOT_EMAIL=${MAIL_USER}
       - BOT_PASS=${MAIL_PASS}
       - SMTP_SERVER=${MAIL_HOST}
