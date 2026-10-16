@@ -32,7 +32,11 @@ BOT_PASS = os.getenv("BOT_PASS")
 INDEX_PATH = "vector_db/faiss_index.bin"
 DB_PATH = os.getenv("DB_PATH", "/data/db.sqlite")
 GPT_SERVICE = os.getenv("GPT_SERVICE", "gpt-cpu")
+GPT_URL = f"http://{GPT_SERVICE}:5000/gpt"
+# llama-server tokenizer, served next to the OpenAI-compatible /v1 API
+TOKENIZE_URL = env("TOKENIZE_URL", re.sub(r"/v1/?$", "", env("LLM_BASE_URL", f"http://{GPT_SERVICE}:8080")) + "/tokenize")
 LLM_BASE_URL = (os.getenv("LLM_BASE_URL") or f"http://{GPT_SERVICE}:8080/v1").rstrip("/")  # OpenAI-compatible API
+>>>>>>> e7983be3e275b5b73766aeb3efe4270dcbfaf17a
 PROMPT_FILE = "assets/" + os.environ.get("PROMPT_FILE", "default") + ".txt"
 FOOTER_FILE = "assets/" + os.environ.get("FOOTER_FILE", "default") + ".txt"
 LLM_NAME = os.getenv("LLM_NAME", "unknown")
