@@ -1,4 +1,4 @@
-.PHONY: build pull push up down logs test-gpu
+.PHONY: build pull push up down logs test-env test-gpu
 
 ENV_FILE?=.env
 
@@ -26,7 +26,7 @@ logs:
 
 test-env:
 	@echo "SMB Configuration:\n=================="
-	@grep -v -E '^\s*#|^MAIL_PASS=' $(ENV_FILE) | awk -F= '{print $$1 "=" $$2}'
+	@grep -v -E '^\s*#|^(MAIL_PASS|MASTER_TOKEN)=' $(ENV_FILE) | awk -F= '{print $$1 "=" $$2}'
 
 test-gpu:
 	@echo "Checking if Docker and NVIDIA Container Toolkit are properly installed."

@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS history (
     timestamp TEXT,
     sender TEXT,
     question TEXT,
-    response TEXT
+    response TEXT,
+    duration REAL
 );
 
 INSERT INTO data (key, value)

@@ -12,6 +12,7 @@ ORCHESTRATOR_URL = os.getenv("ORCHESTRATOR_URL", "http://orchestrator:5000/proce
 
 MAX_RETRIES = 5
 RETRY_INTERVAL = 10
+MAX_ATTEMPTS = 3  # Intentos por email antes de darlo por fallido
 
 
 def log(msg):
@@ -79,7 +80,8 @@ def fetch_one_unseen_email(mail, max_retries=3):
     while retries < max_retries:
         try:
             ensure_connection(mail)
-            status, data = mail.search(None, "UNSEEN")
+            # UIDs en vez de números de secuencia: son estables entre reconexiones
+            status, data = mail.uid("SEARCH", None, "UNSEEN")
             if status != "OK" or not data or not data[0]:
                 return None
 
@@ -88,7 +90,8 @@ def fetch_one_unseen_email(mail, max_retries=3):
                 return None
 
             num = mail_ids[0]
-            status, fetch_data = mail.fetch(num, "(RFC822)")
+            # BODY.PEEK[] no marca el email como leído (RFC822 sí lo hace implícitamente)
+            status, fetch_data = mail.uid("FETCH", num, "(BODY.PEEK[])")
             if status != "OK" or not fetch_data:
                 log(f"❌ Error al obtener email ID {num}")
                 return None
@@ -139,19 +142,27 @@ def fetch_one_unseen_email(mail, max_retries=3):
     return None
 
 
-def mark_as_seen(mail, mail_id):
-    try:
-        ensure_connection(mail)
-        mail.store(mail_id, "+FLAGS", "\\Seen")
-        log(f"✅ Email {mail_id} marcado como leído.")
-    except imaplib.IMAP4.abort:
-        raise
-    except Exception as e:
-        log(f"⚠️ Error marcando email {mail_id} como leído: {e}")
+def mark_as_seen(mail, mail_id, flags="(\\Seen)"):
+    """Marca el email. Si la conexión cayó durante la inferencia, reconecta y reintenta,
+    para no volver a procesar (y responder dos veces) un email ya contestado."""
+    for _ in range(2):
+        try:
+            ensure_connection(mail)
+            mail.uid("STORE", mail_id, "+FLAGS", flags)
+            log(f"✅ Email {mail_id} marcado {flags}.")
+            return mail
+        except imaplib.IMAP4.abort:
+            log("🔄 Conexión IMAP perdida durante el procesado, reconectando...")
+            mail = connect_imap()
+        except Exception as e:
+            log(f"⚠️ Error marcando email {mail_id}: {e}")
+            return mail
+    return mail
 
 
 def main_loop():
     mail = connect_imap()
+    attempts = {}
     log("🟢 Iniciando bucle de revisión de correos.")
 
     while True:
@@ -172,13 +183,26 @@ def main_loop():
 
             try:
                 response = requests.post(ORCHESTRATOR_URL, json=payload)
-                if response.status_code == 200:
-                    log(f"📤 Respuesta orquestador: {response.json()}")
-                    mark_as_seen(mail, mail_id)
-                else:
-                    log(f"⚠️ Orquestador respondió {response.status_code}, no se marca como leído.")
-            except Exception as e:
-                log(f"❌ Error llamando al orquestador: {e}")
+            except requests.exceptions.RequestException as e:
+                # El orquestador no está disponible: no es culpa del email, no cuenta como intento
+                log(f"❌ Error llamando al orquestador: {e}. Reintentando en {RETRY_INTERVAL} segundos...")
+                time.sleep(RETRY_INTERVAL)
+                continue
+
+            if response.status_code == 200:
+                attempts.pop(mail_id, None)
+                mail = mark_as_seen(mail, mail_id)
+                log(f"📤 Respuesta orquestador: {response.json()}")
+                continue
+
+            attempts[mail_id] = attempts.get(mail_id, 0) + 1
+            if attempts[mail_id] >= MAX_ATTEMPTS:
+                log(f"🚫 Email {mail_id} falló {MAX_ATTEMPTS} veces. Se marca como leído y destacado para revisión manual.")
+                attempts.pop(mail_id)
+                mail = mark_as_seen(mail, mail_id, "(\\Seen \\Flagged)")
+            else:
+                log(f"⚠️ Orquestador respondió {response.status_code} (intento {attempts[mail_id]}/{MAX_ATTEMPTS}), no se marca como leído.")
+                time.sleep(RETRY_INTERVAL)
 
         except imaplib.IMAP4.abort:
             log("🔄 Reconectando a IMAP...")

@@ -1,4 +1,3 @@
-<s>[INST]
 # ROL:
 Eres un asistente técnico de ideniox.com.
 
@@ -32,5 +31,3 @@ Saluda brevemente y responde:
 Hola [usuario],
 
 <respuesta>
-
-[/INST]</s>

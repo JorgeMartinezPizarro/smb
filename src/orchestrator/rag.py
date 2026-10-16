@@ -264,13 +264,19 @@ def faq_hits(body):
 
 # --- Wikipedia ---
 
+def strip_reply_prefixes(subject):
+	"""Remove repeated reply/forward prefixes: 'Re: RE: Fwd: X' -> 'X'"""
+	return re.sub(r"^(\s*(re|fwd?|rv|res)\s*:\s*)+", "", subject, flags=re.IGNORECASE).strip()
+
+
 def normalize_subject(subject):
 	"""
 	Normalize a subject string for more reliable Wikipedia lookups.
 	Strips common filler words, normalizes unicode, and title-cases.
 	"""
 	subject = unicodedata.normalize("NFKC", subject)
-	subject = re.sub(r"^(re|fwd|fw|asunto|pregunta|duda sobre|consulta sobre)[:\s]+", "", subject, flags=re.IGNORECASE)
+	subject = strip_reply_prefixes(subject)
+	subject = re.sub(r"^(asunto|pregunta|duda sobre|consulta sobre)[:\s]+", "", subject, flags=re.IGNORECASE)
 	subject = re.sub(r"[^\w\s\-áéíóúñüÁÉÍÓÚÑÜ]", " ", subject)
 	subject = re.sub(r"\s+", " ", subject).strip()
 	return subject.title()

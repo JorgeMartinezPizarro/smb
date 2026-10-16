@@ -70,19 +70,26 @@ you can use `make push` and `make pull` to get your own compiled images.
 
 To create custom `prompt` using `RAG`, you can use the placeholders:
 
-- `{history}`: historical conversation data.
 - `{message}`: the question of the user.
+- `{history}`: historical conversation data.
+- `{greeting}`: the name of the user, if known.
+- `{sender}`: the email address of the user.
 - `{context}`: the `FAQ_TOP_K` question/answer pairs of `assets/faq.txt` most relevant to the message.
 - `{wikipedia}`: the `WIKIPEDIA_TOP_K` most relevant chunks of the Wikipedia article named in the subject.
 
 Retrieval uses multilingual models (`EMBED_MODEL`, `RERANK_MODEL`), so Spanish questions match English articles. Chunks scoring below `WIKIPEDIA_THRESHOLD` / `FAQ_THRESHOLD` are dropped. If the prompt would not fit in `MAX_PROMPT_LENGTH - MAX_TOKENS`, the oldest history and then the lowest-scored chunks are removed. Placeholders missing from the template are not retrieved.
 
+The chat template of the model is applied automatically, do not add tokens like `<s>[INST]` to the prompt.
+
 To create custom `footer`, you can use the placeholders:
 
 - `{time}`: the current date and time.
 - `{duration}`: total duration of the inference.
+- `{model}`: the name of the model.
 
-For advanced `Chain of Thought` you need to wait, it is under research and will be availabe soon.
+Files in `assets/` are read on every email, changes apply without restart.
+
+For advanced `Chain of Thought` you need to wait, it is under research and will be available soon.
 
 ## 🏭 Build
 
@@ -100,7 +107,7 @@ Finally, to start `SMB`:
 make up
 ```
 
-It waits until the model is downloaded and loaded. After the system is up, `SMB` will answer incoming emails.
+It waits until the model is downloaded and loaded. After the system is up, `SMB` will answer incoming emails. Services restart automatically after a failure or a reboot.
 
 Use
 
@@ -110,20 +117,32 @@ make logs
 
 for further information.
 
-To change the compose project name, or use another environment file, you can use:
+To run several instances from the same folder, create one environment file for each, with its own `PROJECT_NAME`, and pass it to `make`:
 
 ```sh
-export ENV_FILE = .env.RTX3050-math
-export PROJECT_NAME = mega
-make build up logs
+make ENV_FILE=.env.RTX3050-math build up logs
 ```
+
+Each instance keeps its own database in `cache/<PROJECT_NAME>/`.
 
 ## 💬 Usage
 
-After the project is running, the service will answer questions in the configured email account.
+After the project is running, `SMB` will answer every new email in the configured account.
 
-To use the service, just send an email with subject `Duda`.
-In order to enable `wikipedia` RAG, you need to provide a search query in the subject to let the model automatically read the wikipedia article.
+The subject is used as a `wikipedia` search query, to let the model read the matching article. To ask the model directly, without `wikipedia`, use the subject `Duda`.
+
+Emails that fail 3 times are marked as read and flagged for manual review.
+
+## 🎛️ Commands
+
+Set `MASTER_EMAIL` and `MASTER_TOKEN` to manage `SMB` by email. From the master address, send an email with the command as subject and the token as first line of the body:
+
+- `#prompt`: the text below the token becomes the master prompt, it must include `{message}`. Without text, replies with the current prompt.
+- `#reset`: back to the prompt of `PROMPT_FILE`.
+- `#stats`: number of queries, duration and top senders.
+- `#help`: list of commands.
+
+The prompt set by email is stored in the instance database and used from the next email on, no restart needed.
 
 ## 🏛️ License
 
