@@ -10,7 +10,7 @@ A `python` mail client looking for new emails.
 
 ### GPT
 
-A `llama.cpp` service with a `GGUF` model.
+The official `llama.cpp` server with a `GGUF` model, exposing an OpenAI-compatible API.
 
 ### Database
 
@@ -25,7 +25,7 @@ A `python` service that uses embeddings with `GPT` to answer emails.
 - 8GB VRAM + 8GB RAM for GPU or 16GB RAM for CPU.
 - Docker.
 - GNU Make.
-- Nvidia container toolkit (optional for GPU usage).
+- Nvidia container toolkit and a CUDA 12.8 capable driver (optional for GPU usage).
 
 **NOTE**: To run `SMB` on windows, you need WSL additionally.
 
@@ -49,6 +49,8 @@ Change `.env` according to your needs:
 - [Config examples](.env.sample)
 
 - [Benchmarks](docs/config.md)
+
+The model `LLM_REPO`/`LLM_NAME` is downloaded from Hugging Face into `cache/models` on first start. `LLAMA_CPP_BUILD` pins the `ghcr.io/ggml-org/llama.cpp` image build, and `LLM_BASE_URL` points the orchestrator to any OpenAI-compatible endpoint (default: `GPT_SERVICE`).
 
 To check if your system can use `CUDA`, use:
 
@@ -96,7 +98,7 @@ Finally, to start `SMB`:
 make up
 ```
 
-After the system is up, `SMB` will answer incoming emails.
+It waits until the model is downloaded and loaded. After the system is up, `SMB` will answer incoming emails.
 
 Use
 

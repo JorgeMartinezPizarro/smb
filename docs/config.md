@@ -1,6 +1,22 @@
+## LLM backend
+
+`gpt-cpu` and `gpt-gpu` run `ghcr.io/ggml-org/llama.cpp:server[-cuda]-${LLAMA_CPP_BUILD}`, configured with `LLAMA_ARG_*` variables:
+
+| `.env` | llama.cpp server |
+|---|---|
+| `LLM_REPO` / `LLM_NAME` | `--hf-repo` / `--hf-file` (cached in `cache/models`) |
+| `MAX_PROMPT_LENGTH` | `--ctx-size` |
+| `NUM_THREADS` | `--threads` |
+| `BATCH_SIZE` | `--batch-size` |
+| `GPU_LAYERS` | `--n-gpu-layers` (`gpu` profile, `0` on `cpu`) |
+
+Always set: `--jinja`, `--reasoning-format deepseek` (thinking goes to the 🧠 card of the email, not to the history) and `--parallel 1`.
+
+`MAX_TOKENS`, `TEMPERATURE`, `TOP_P`, `TOP_K` and `REPETITION_PENALTY` (`repeat_penalty`) are sent by the orchestrator with every `POST ${LLM_BASE_URL}/chat/completions`.
+
 ## Benchmarking
 
-The service has been tested with the following hardware and setups:
+The service has been tested with the following hardware and setups (measured with the former `llama-cpp-python` service):
 
 ### i5 13500 64GB RAM
 
@@ -11,7 +27,6 @@ COMPOSE_PROFILES=cpu
 GPT_SERVICE=gpt-cpu
 BATCH_SIZE=4096 
 NUM_THREADS=16
-USE_GPU=false
 MAX_PROMPT_LENGTH=2048
 MAX_TOKENS=256
 GPU_LAYERS=0
@@ -34,7 +49,6 @@ COMPOSE_PROFILES=gpu
 GPT_SERVICE=gpt-gpu
 BATCH_SIZE=4096 
 NUM_THREADS=6
-USE_GPU=true
 MAX_PROMPT_LENGTH=2048
 MAX_TOKENS=512
 GPU_LAYERS=33

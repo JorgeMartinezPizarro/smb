@@ -38,6 +38,13 @@ WIKIPEDIA_FALLBACK_LANGS = os.getenv("WIKIPEDIA_FALLBACK_LANGS", "es,en")  # Com
 WIKIPEDIA_MAX_SEARCH_RESULTS = int(os.getenv("WIKIPEDIA_MAX_SEARCH_RESULTS", "5"))  # Max search candidates
 TIMEOUT = int(os.getenv("TIMEOUT", "600"))     # GPT Request timeout
 
+# Sampling settings, sent with every LLM request
+MAX_TOKENS = int(os.getenv("MAX_TOKENS", "512"))
+TEMPERATURE = float(os.getenv("TEMPERATURE", "0.2"))
+TOP_P = float(os.getenv("TOP_P", "0.5"))
+TOP_K = int(os.getenv("TOP_K", "25"))
+REPETITION_PENALTY = float(os.getenv("REPETITION_PENALTY", "1.15"))
+
 # Email settings
 MAIL_HISTORY_SIZE = int(os.getenv("MAIL_HISTORY_SIZE", "3"))
 SMTP_SERVER = os.getenv("SMTP_SERVER")
@@ -48,7 +55,7 @@ BOT_PASS = os.getenv("BOT_PASS")
 INDEX_PATH = "vector_db/faiss_index.bin"
 DB_PATH = os.getenv("DB_PATH", "/data/db.sqlite")
 GPT_SERVICE = os.getenv("GPT_SERVICE", "gpt-cpu")
-GPT_URL = f"http://{GPT_SERVICE}:5000/gpt"
+LLM_BASE_URL = (os.getenv("LLM_BASE_URL") or f"http://{GPT_SERVICE}:8080/v1").rstrip("/")  # OpenAI-compatible API
 PROMPT_FILE = "assets/" + os.environ.get("PROMPT_FILE", "default") + ".txt"
 FOOTER_FILE = "assets/" + os.environ.get("FOOTER_FILE", "default") + ".txt"
 LLM_NAME = os.getenv("LLM_NAME", "unknown")
@@ -94,43 +101,42 @@ def get_history_for_sender(sender, limit=MAIL_HISTORY_SIZE):
 		return cur.fetchall()
 
 def ask_gpt_with_retry(prompt, retries=3, delay=3):
-	"""Query GPT service with retry logic"""
-	messages = [{"role": "user", "content": prompt}]
+	"""Query the OpenAI-compatible chat endpoint with retry logic.
+	Returns (content, reasoning); reasoning is empty for non-reasoning models."""
+	payload = {
+		"model": LLM_NAME,
+		"messages": [{"role": "user", "content": prompt}],
+		"max_tokens": MAX_TOKENS,
+		"temperature": TEMPERATURE,
+		"top_p": TOP_P,
+		"top_k": TOP_K,
+		"repeat_penalty": REPETITION_PENALTY,
+	}
 	for i in range(retries):
 		try:
-			response = requests.post(GPT_URL, json={"messages": messages}, timeout=TIMEOUT)
+			response = requests.post(f"{LLM_BASE_URL}/chat/completions", json=payload, timeout=TIMEOUT)
 			if response.status_code == 200:
-				return response.json().get("response", "").strip()
-			logging.warning(f"GPT bad response: {response.status_code}")
+				message = response.json()["choices"][0]["message"]
+				content = (message.get("content") or "").strip()
+				reasoning = (message.get("reasoning_content") or "").strip()
+				return content, reasoning
+			logging.warning(f"GPT bad response: {response.status_code} {response.text[:200]}")
 		except requests.exceptions.RequestException as e:
 			logging.warning(f"Attempt {i+1} failed: {e}")
-			time.sleep(delay)
+		time.sleep(delay)
 	raise Exception("Failed to connect to GPT after multiple attempts")
 
-def send_email(to, subject, body_md, duration):
+def send_email(to, subject, body_md, duration, reasoning=""):
 	"""
 	Envía email en HTML con diseño compacto y estilo verde
 	"""
-	import re
 	from email.message import EmailMessage
 	import smtplib
 	from html import escape
 	import markdown
 
-	# TODO: generalizar esto para otros modelos, es hardcodeo para GPT-OSS-20b
-	# Detectar bloque analysis y bloque final
-	pattern = re.compile(
-		r"<\|channel\|>analysis<\|message\|>(.*?)<\|end\|><\|start\|>assistant<\|channel\|>final<\|message\|>(.*)",
-		re.DOTALL
-	)
-
-	match = pattern.search(body_md)
-	if match:
-		analysis_content = match.group(1).strip()
-		final_content = match.group(2).strip()
-	else:
-		analysis_content = ""
-		final_content = body_md.strip()
+	final_content = body_md.strip()
+	analysis_content = reasoning.strip()
 
 	# Convertir markdown a HTML
 	def convert_markdown_to_html(md_text):
@@ -714,15 +720,15 @@ def process_email(sender, subject, body):
 	prompt = build_prompt(sender, name, subject, body, history)
 	logging.info(f"Prompt generated:\n\n{prompt}")
 	try:
-		response = ask_gpt_with_retry(prompt)
-		log_history(sender, body, response)
+		response, reasoning = ask_gpt_with_retry(prompt)
+		log_history(sender, body, response)  # final answer only, no reasoning
 		end = time.time()
 		elapsed = end - start
 		hours = int(elapsed // 3600)
 		minutes = int((elapsed % 3600) // 60)
 		seconds = int(elapsed % 60)
 		duration = f"Elapsed time: {hours}h {minutes}m {seconds}s"
-		send_email(sender, f"Re: {subject}", response, duration)
+		send_email(sender, f"Re: {subject}", response, duration, reasoning)
 		return response
 	except Exception as e:
 		logging.error(f"Email processing failed: {e}")
