@@ -72,8 +72,10 @@ To create custom `prompt` using `RAG`, you can use the placeholders:
 
 - `{history}`: historical conversation data.
 - `{message}`: the question of the user.
-- `{context}`: replaced with content extracted from assets/faq.txt, configurable.
- - `{wikipedia}`: replaced with wikipedia extracted content, size configurable.
+- `{context}`: the `FAQ_TOP_K` question/answer pairs of `assets/faq.txt` most relevant to the message.
+- `{wikipedia}`: the `WIKIPEDIA_TOP_K` most relevant chunks of the Wikipedia article named in the subject.
+
+Retrieval uses multilingual models (`EMBED_MODEL`, `RERANK_MODEL`), so Spanish questions match English articles. Chunks scoring below `WIKIPEDIA_THRESHOLD` / `FAQ_THRESHOLD` are dropped. If the prompt would not fit in `MAX_PROMPT_LENGTH - MAX_TOKENS`, the oldest history and then the lowest-scored chunks are removed. Placeholders missing from the template are not retrieved.
 
 To create custom `footer`, you can use the placeholders:
 
