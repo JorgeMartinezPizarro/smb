@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from email.header import decode_header
-from email.utils import parseaddr
+from email.utils import parseaddr, formatdate, make_msgid
 import sqlite3, requests, smtplib, os, time, re, logging, math, hmac
 from email.message import EmailMessage
 import subprocess
@@ -327,11 +327,17 @@ def send_email(to, subject, body_md, duration, reasoning=""):
 	msg["Subject"] = subject
 	msg["From"] = BOT_EMAIL
 	msg["To"] = to
+	# Required by RFC 5322, Gmail rejects messages without Message-ID
+	msg["Date"] = formatdate(localtime=True)
+	msg["Message-ID"] = make_msgid(domain=BOT_EMAIL.split("@")[-1])
+	# Plain text version first, an HTML-only email scores worse in spam filters
+	msg.set_content(final_content)
 	msg.add_alternative(html_content, subtype='html')
 
 	with smtplib.SMTP_SSL(SMTP_SERVER, 465) as smtp:
 		smtp.login(BOT_EMAIL, BOT_PASS)
 		smtp.send_message(msg)
+	logging.info(f"Email sent to {to} - Subject: '{subject}' - {msg['Message-ID']}")
 				
 def extract_name_from_message(message):
 	"""Extract name from message text: up to 3 capitalized words after the trigger"""
