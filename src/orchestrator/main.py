@@ -26,6 +26,7 @@ TEMPERATURE = float(os.getenv("TEMPERATURE", "0.2"))
 TOP_P = float(os.getenv("TOP_P", "0.5"))
 TOP_K = int(os.getenv("TOP_K", "25"))
 REPETITION_PENALTY = float(os.getenv("REPETITION_PENALTY", "1.15"))
+PRESENCE_PENALTY = float(os.getenv("PRESENCE_PENALTY", "0"))
 
 # Email settings
 MAIL_HISTORY_SIZE = int(os.getenv("MAIL_HISTORY_SIZE", "3"))
@@ -154,6 +155,7 @@ def ask_gpt_with_retry(prompt, retries=3, delay=3):
 		"top_p": TOP_P,
 		"top_k": TOP_K,
 		"repeat_penalty": REPETITION_PENALTY,
+		"presence_penalty": PRESENCE_PENALTY,
 	}
 	for i in range(retries):
 		try:

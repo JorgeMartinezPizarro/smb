@@ -10,6 +10,9 @@ x-llama-env: &llama-env
   LLAMA_ARG_N_PARALLEL: 1
   LLAMA_ARG_JINJA: 1
   LLAMA_ARG_THINK: deepseek
+  LLAMA_ARG_REASONING: ${LLM_REASONING:-auto}
+  # Text only: don't download nor load the image projector of multimodal models
+  LLAMA_ARG_MMPROJ_AUTO: "false"
 
 x-llama: &llama
   restart: unless-stopped
@@ -89,6 +92,7 @@ services:
       - TOP_P=${TOP_P}
       - TOP_K=${TOP_K}
       - REPETITION_PENALTY=${REPETITION_PENALTY}
+      - PRESENCE_PENALTY=${PRESENCE_PENALTY:-0}
       - BOT_EMAIL=${MAIL_USER}
       - BOT_PASS=${MAIL_PASS}
       - MASTER_EMAIL=${MASTER_EMAIL:-}
