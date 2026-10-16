@@ -95,10 +95,20 @@ services:
       - WIKIPEDIA_TOP_K=${WIKIPEDIA_TOP_K}
       - WIKIPEDIA_MAX_CONTENT=${WIKIPEDIA_MAX_CONTENT}
       - WIKIPEDIA_CHUNK_SIZE=${WIKIPEDIA_CHUNK_SIZE}
-      - WIKIPEDIA_BATCH_SIZE=${WIKIPEDIA_BATCH_SIZE}
       - WIKIPEDIA_LANG=${WIKIPEDIA_LANG}
       - WIKIPEDIA_THRESHOLD=${WIKIPEDIA_THRESHOLD}
       - WIKIPEDIA_MIN_SECTION=${WIKIPEDIA_MIN_SECTION}
+      - EMBED_MODEL=${EMBED_MODEL:-}
+      - EMBED_BATCH_SIZE=${EMBED_BATCH_SIZE:-}
+      - RERANK_MODEL=${RERANK_MODEL:-}
+      - RERANK_MAX_LENGTH=${RERANK_MAX_LENGTH:-}
+      - FAQ_FILE=${FAQ_FILE:-}
+      - FAQ_TOP_K=${FAQ_TOP_K:-}
+      - FAQ_THRESHOLD=${FAQ_THRESHOLD:-}
+      - MAX_PROMPT_LENGTH=${MAX_PROMPT_LENGTH}
+      - MAX_TOKENS=${MAX_TOKENS}
+      - PROMPT_MARGIN=${PROMPT_MARGIN:-}
+      - TOKENIZE_URL=${TOKENIZE_URL:-}
       - MAIL_HISTORY_SIZE=${MAIL_HISTORY_SIZE}
       - PROMPT_FILE=${PROMPT_FILE}
       - TIMEOUT=${TIMEOUT}
@@ -108,4 +118,6 @@ services:
       - ./cache/sqlite:/data
       - ./cache/vector_db:/app/vector_db
       - ./cache/wikipedia:/app/cache/wikipedia
+      - ./cache/faq:/app/cache/faq
+      - ./cache/huggingface:/root/.cache/huggingface
       - ./assets/:/app/assets
