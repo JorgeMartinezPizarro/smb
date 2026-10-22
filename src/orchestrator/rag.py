@@ -289,14 +289,14 @@ def strip_reply_prefixes(subject):
 def normalize_subject(subject):
 	"""
 	Normalize a subject string for more reliable Wikipedia lookups.
-	Strips common filler words, normalizes unicode, and title-cases.
+	Strips common filler words and normalizes unicode. The case is kept: titles are case-sensitive
+	after the first letter ("Club de Fútbol", "Revolución francesa") and MediaWiki capitalizes the first one.
 	"""
 	subject = unicodedata.normalize("NFKC", subject)
 	subject = strip_reply_prefixes(subject)
 	subject = re.sub(r"^(asunto|pregunta|duda sobre|consulta sobre)[:\s]+", "", subject, flags=re.IGNORECASE)
 	subject = re.sub(r"[^\w\s\-áéíóúñüÁÉÍÓÚÑÜ]", " ", subject)
-	subject = re.sub(r"\s+", " ", subject).strip()
-	return subject.title()
+	return re.sub(r"\s+", " ", subject).strip()
 
 
 def search_wikipedia_candidates(subject, lang, max_results=WIKIPEDIA_MAX_SEARCH_RESULTS):
@@ -358,7 +358,11 @@ def get_wikipedia_page(subject, lang=WIKIPEDIA_LANG):
 
 		candidates = search_wikipedia_candidates(subject, current_lang)
 		if candidates:
-			scored = sorted(((score_candidate(t, s, subject), t) for t, s in candidates), reverse=True)
+			# An exact title match goes first; ties keep Wikipedia's own relevance order (stable sort)
+			scored = sorted(
+				((score_candidate(t, s, subject) + (t.lower() == subject.lower()), t) for t, s in candidates),
+				key=lambda c: c[0], reverse=True,
+			)
 			logging.info(
 				f"Wikipedia candidates for '{subject}' in '{current_lang}': "
 				+ ", ".join(f"{t} ({score:.2f})" for score, t in scored[:3])
