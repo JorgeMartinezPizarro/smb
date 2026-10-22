@@ -7,6 +7,7 @@ chunk -> embed -> cache -> multi-query FAISS -> rerank -> threshold -> dedupe ->
 
 import hashlib, logging, os, re, threading, time, unicodedata
 from dataclasses import dataclass
+from urllib.parse import quote
 
 import faiss
 import numpy as np
@@ -39,6 +40,8 @@ WIKIPEDIA_THRESHOLD = float(env("WIKIPEDIA_THRESHOLD", "0.1"))            # Min 
 WIKIPEDIA_CACHE_TTL = int(env("WIKIPEDIA_CACHE_TTL", "86400"))            # Cache TTL in seconds (default: 1 day)
 WIKIPEDIA_FALLBACK_LANGS = env("WIKIPEDIA_FALLBACK_LANGS", "es,en")       # Comma-separated fallback langs
 WIKIPEDIA_MAX_SEARCH_RESULTS = int(env("WIKIPEDIA_MAX_SEARCH_RESULTS", "5"))  # Max search candidates
+# Wikimedia throttles generic agents: name the bot and a contact URL
+WIKIPEDIA_USER_AGENT = "smb-knowledge-bot/1.0 (https://github.com/JorgeMartinezPizarro/smb)"
 
 # FAQ settings
 FAQ_FILE = "assets/" + env("FAQ_FILE", "faq") + ".txt"
@@ -315,13 +318,18 @@ def search_wikipedia_candidates(subject, lang, max_results=WIKIPEDIA_MAX_SEARCH_
 	try:
 		resp = requests.get(
 			f"https://{lang}.wikipedia.org/w/api.php", params=params, timeout=10,
-			headers={"User-Agent": "knowledge-bot/1.0"},
+			headers={"User-Agent": WIKIPEDIA_USER_AGENT},
 		)
 		if resp.status_code == 200:
 			return [(r["title"], r.get("snippet", "")) for r in resp.json().get("query", {}).get("search", [])]
 	except Exception as e:
 		logging.warning(f"Wikipedia candidate search failed for '{subject}' in '{lang}': {e}")
 	return []
+
+
+def wikipedia_langs(lang=WIKIPEDIA_LANG):
+	"""lang first, then WIKIPEDIA_FALLBACK_LANGS"""
+	return [lang] + [l.strip() for l in WIKIPEDIA_FALLBACK_LANGS.split(",") if l.strip() and l.strip() != lang]
 
 
 def get_wikipedia_page(subject, lang=WIKIPEDIA_LANG):
@@ -339,14 +347,9 @@ def get_wikipedia_page(subject, lang=WIKIPEDIA_LANG):
 		target_tokens = set(re.findall(r"\w+", (title + " " + snippet).lower()))
 		return len(query_tokens & target_tokens) / len(query_tokens) if query_tokens else 0.0
 
-	langs_to_try = [lang] + [
-		l.strip() for l in WIKIPEDIA_FALLBACK_LANGS.split(",")
-		if l.strip() and l.strip() != lang
-	]
-
-	for current_lang in langs_to_try:
+	for current_lang in wikipedia_langs(lang):
 		wiki = wikipediaapi.Wikipedia(
-			user_agent="knowledge-bot/1.0",
+			user_agent=WIKIPEDIA_USER_AGENT,
 			language=current_lang,
 			extract_format=wikipediaapi.ExtractFormat.WIKI,
 		)
@@ -425,15 +428,55 @@ def wikipedia_corpus(subject, lang=WIKIPEDIA_LANG):
 	)
 
 
+class ArticleNotFound(Exception):
+	"""No Wikipedia article for the subject; carries Wikipedia's suggestions for the reply."""
+
+	def __init__(self, subject, suggestions):
+		super().__init__(f"No Wikipedia article for '{subject}'")
+		self.subject = subject
+		self.suggestions = suggestions  # [(title, url)]
+
+
+def wikipedia_suggestions(subject, max_results=5):
+	"""
+	[(title, url)] that Wikipedia proposes for a subject without article: the search results of the
+	first language that has any, retrying with Wikipedia's spelling suggestion ("¿quisiste decir…?").
+	"""
+	for lang in wikipedia_langs():
+		query = subject
+		for _ in range(2):  # the subject, then Wikipedia's spelling suggestion
+			try:
+				data = requests.get(
+					f"https://{lang}.wikipedia.org/w/api.php", timeout=10, headers={"User-Agent": WIKIPEDIA_USER_AGENT},
+					params={"action": "query", "list": "search", "srsearch": query, "srlimit": max_results,
+						"srinfo": "suggestion", "srprop": "", "format": "json"},
+				).json().get("query", {})
+			except Exception as e:
+				logging.warning(f"Wikipedia suggestions failed for '{query}' in '{lang}': {e}")
+				break
+			titles = [r["title"] for r in data.get("search", [])]
+			if titles:
+				return [(t, f"https://{lang}.wikipedia.org/wiki/{quote(t.replace(' ', '_'))}") for t in titles]
+			query = data.get("searchinfo", {}).get("suggestion")
+			if not query:
+				break
+	return []
+
+
 def wikipedia_hits(subject, body):
-	"""Most relevant Wikipedia chunks about the email subject for the message ([] if none)."""
+	"""
+	Most relevant Wikipedia chunks about the email subject for the message ([] if none is relevant).
+	Raises ArticleNotFound when the subject is empty or names no article.
+	"""
 	normalized = normalize_subject(subject)
+	if not normalized:
+		raise ArticleNotFound("", [])
 	corpus = wikipedia_corpus(normalized)
 	if not corpus and normalized != subject:
 		logging.info(f"Retrying Wikipedia fetch with raw subject: '{subject}'")
 		corpus = wikipedia_corpus(subject)
 	if not corpus:
-		return []
+		raise ArticleNotFound(normalized, wikipedia_suggestions(normalized))
 	# The subject names the topic; the body alone ("¿cuándo nació?") may not.
 	prefix = "" if normalized.lower() in body.lower() else f"{normalized}: "
 	rerank_queries = [prefix + q for q in [body] + questions(body)]

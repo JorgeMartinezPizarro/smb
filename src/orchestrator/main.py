@@ -9,7 +9,7 @@ from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
 
-from rag import env, faq_hits, wikipedia_hits, normalize_subject, strip_reply_prefixes, load_models
+from rag import env, faq_hits, wikipedia_hits, normalize_subject, strip_reply_prefixes, load_models, ArticleNotFound
 
 app = Flask(__name__)
 
@@ -497,6 +497,8 @@ def build_prompt(sender, name, subject, body, history):
 	def hits(retrieve, *args):
 		try:
 			return retrieve(*args)
+		except ArticleNotFound:
+			raise
 		except Exception as e:
 			logging.warning(f"{retrieve.__name__} failed: {e}")
 			return []
@@ -505,15 +507,11 @@ def build_prompt(sender, name, subject, body, history):
 	if "{context}" in template:
 		sources["context"] = (hits(faq_hits, body), "")
 	if "{wikipedia}" in template:
-		# "Duda" (también "Re: Duda") o sin asunto: consulta directa al modelo, sin Wikipedia
-		topic = normalize_subject(subject)
-		if topic.lower() in ("", "duda"):
-			sources["wikipedia"] = ([], "")
-		else:
-			sources["wikipedia"] = (
-				hits(wikipedia_hits, subject, body),
-				f"No se encontró información relevante en Wikipedia sobre '{topic}'.",
-			)
+		# The subject is always the Wikipedia article: ArticleNotFound if there is none
+		sources["wikipedia"] = (
+			hits(wikipedia_hits, subject, body),
+			f"No se encontró información relevante en Wikipedia sobre '{normalize_subject(subject)}'.",
+		)
 
 	return fit_prompt(
 		template,
@@ -521,6 +519,18 @@ def build_prompt(sender, name, subject, body, history):
 		history if "{history}" in template else [],
 		sources,
 	)
+
+def article_not_found_reply(name, error):
+	"""Reply for a subject without Wikipedia article, with the articles Wikipedia suggests"""
+	if not error.subject:
+		return f"Hola {name},\n\nEl asunto está vacío. Escribe en el asunto el artículo de Wikipedia sobre el que quieres preguntar."
+	lines = [f"Hola {name},", "", f"No he encontrado un artículo de Wikipedia para «{error.subject}»."]
+	if error.suggestions:
+		lines += ["", "Quizás te sirva alguno de estos:", ""] + [f"- [{title}]({url})" for title, url in error.suggestions]
+		lines += ["", "Vuelve a escribir con uno de ellos como asunto."]
+	else:
+		lines += ["", "Prueba con otro asunto: el nombre del artículo tal como aparece en Wikipedia."]
+	return "\n".join(lines)
 
 def process_email(sender, subject, body):
 	"""Main email processing pipeline"""
@@ -562,6 +572,11 @@ def process_email(sender, subject, body):
 		logging.info(f"Prompt generated:\n\n{prompt}")
 		response, reasoning = ask_gpt_with_retry(prompt)
 		send_email(sender, reply_subject, response, format_duration(start), reasoning)
+	except ArticleNotFound as e:
+		logging.info(f"{e}: replying with {len(e.suggestions)} suggestions")
+		reply = article_not_found_reply(name, e)
+		send_email(sender, reply_subject, reply, format_duration(start))
+		return reply
 	except Exception as e:
 		logging.error(f"Email processing failed: {e}")
 		error_msg = "Sorry, we're experiencing technical difficulties. Please try again later."

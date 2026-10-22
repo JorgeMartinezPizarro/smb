@@ -129,7 +129,7 @@ Each instance keeps its own database in `cache/<PROJECT_NAME>/`.
 
 After the project is running, `SMB` will answer every new email in the configured account.
 
-The subject is used as a `wikipedia` search query, to let the model read the matching article. To ask the model directly, without `wikipedia`, use the subject `Duda`.
+The subject is always the `wikipedia` article to read, and the model answers only from it. If there is no article with that name, `SMB` replies at once with the articles `wikipedia` suggests.
 
 Emails that fail 3 times are marked as read and flagged for manual review.
 
