@@ -1,6 +1,6 @@
 <p>George von Knowman</p>
-<p>Math Teacher Assistant (MTA)</p>
-<p>https://math.ideniox.com/</p>
+<p>Code Technical Support</p>
+<p>https://ideniox.com/</p>
 <hr/>
 <p>Model: {model}</p>
 <p>CPU: i5 13500 64GB RAM</p>
