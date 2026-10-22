@@ -23,6 +23,7 @@ Características:
 {message}
 
 # FORMATO OBLIGATORIO:
+Escribe en texto plano o Markdown sencillo, sin LaTeX: las fórmulas así, a² + b² = c².
 Saluda brevemente y responde:
 
 Hola {greeting},

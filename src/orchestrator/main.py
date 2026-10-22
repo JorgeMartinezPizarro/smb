@@ -186,6 +186,13 @@ def send_email(to, subject, body_md, duration, reasoning=""):
 
 	# Convertir markdown a HTML
 	def convert_markdown_to_html(md_text):
+		# Python-Markdown needs a blank line before a list, models often write "Donde:\n* a ..."
+		# (outside code blocks, whose content must stay as written)
+		md_text = "".join(
+			part if part.startswith("```") else
+			re.sub(r"(?m)^(?![ \t]*(?:[*+-]|\d+\.)[ \t])(.*\S.*)\n(?=[ \t]*(?:[*+-]|\d+\.)[ \t])", r"\1\n\n", part)
+			for part in re.split(r"(```.*?```)", md_text, flags=re.S)
+		)
 		html = markdown.markdown(md_text, extensions=['fenced_code', 'nl2br'])
 		return html
 
@@ -512,6 +519,9 @@ def build_prompt(sender, name, subject, body, history):
 			hits(wikipedia_hits, subject, body),
 			f"No se encontró información relevante en Wikipedia sobre '{normalize_subject(subject)}'.",
 		)
+		# Nothing to ground an answer on: don't let the model answer from memory
+		if not any(hits for hits, _ in sources.values()):
+			raise NothingRelevant(normalize_subject(subject))
 
 	return fit_prompt(
 		template,
@@ -519,6 +529,9 @@ def build_prompt(sender, name, subject, body, history):
 		history if "{history}" in template else [],
 		sources,
 	)
+
+class NothingRelevant(Exception):
+	"""The article exists but no chunk is relevant to the message"""
 
 def article_not_found_reply(name, error):
 	"""Reply for a subject without Wikipedia article, with the articles Wikipedia suggests"""
@@ -575,6 +588,11 @@ def process_email(sender, subject, body):
 	except ArticleNotFound as e:
 		logging.info(f"{e}: replying with {len(e.suggestions)} suggestions")
 		reply = article_not_found_reply(name, e)
+		send_email(sender, reply_subject, reply, format_duration(start))
+		return reply
+	except NothingRelevant as e:
+		logging.info(f"No relevant Wikipedia chunk for '{e}': replying without the model")
+		reply = f"Hola {name},\n\nNo consta en la Wikipedia proporcionada: el artículo sobre «{e}» no contiene información relevante para tu consulta."
 		send_email(sender, reply_subject, reply, format_duration(start))
 		return reply
 	except Exception as e:
