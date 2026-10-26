@@ -18,7 +18,7 @@ x-llama-env: &llama-env
 x-llama: &llama
   restart: unless-stopped
   volumes:
-    - ./cache/models:/models
+    - ${DATA_DIR:-./cache}/models:/models
   healthcheck:
     test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
     interval: 20s
@@ -67,7 +67,7 @@ services:
       context: ./src/db
     restart: unless-stopped
     volumes:
-      - ./cache/${PROJECT_NAME:-smb}/sqlite:/data
+      - ${DATA_DIR:-./cache}/${PROJECT_NAME:-smb}/sqlite:/data
 
   orchestrator:
     image: ${REGISTRY_USER}/${REGISTRY_REPO}-orchestrator:${IMAGE_TAG}
@@ -121,9 +121,9 @@ services:
       - FOOTER_FILE=${FOOTER_FILE}
       - LLM_NAME=${LLM_NAME}
     volumes:
-      - ./cache/${PROJECT_NAME:-smb}/sqlite:/data
-      - ./cache/vector_db:/app/vector_db
-      - ./cache/wikipedia:/app/cache/wikipedia
-      - ./cache/faq:/app/cache/faq
-      - ./cache/huggingface:/root/.cache/huggingface
+      - ${DATA_DIR:-./cache}/${PROJECT_NAME:-smb}/sqlite:/data
+      - ${DATA_DIR:-./cache}/vector_db:/app/vector_db
+      - ${DATA_DIR:-./cache}/wikipedia:/app/cache/wikipedia
+      - ${DATA_DIR:-./cache}/faq:/app/cache/faq
+      - ${DATA_DIR:-./cache}/huggingface:/root/.cache/huggingface
       - ./assets/:/app/assets

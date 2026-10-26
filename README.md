@@ -50,7 +50,7 @@ Change `.env` according to your needs:
 
 - [Benchmarks](docs/config.md)
 
-The model `LLM_REPO`/`LLM_NAME` is downloaded from Hugging Face into `cache/models` on first start. `LLAMA_CPP_BUILD` pins the `ghcr.io/ggml-org/llama.cpp` image build, and `LLM_BASE_URL` points the orchestrator to any OpenAI-compatible endpoint (default: `GPT_SERVICE`).
+The model `LLM_REPO`/`LLM_NAME` is downloaded from Hugging Face into `DATA_DIR/models` on first start. `LLAMA_CPP_BUILD` pins the `ghcr.io/ggml-org/llama.cpp` image build, and `LLM_BASE_URL` points the orchestrator to any OpenAI-compatible endpoint (default: `GPT_SERVICE`).
 
 To check if your system can use `CUDA`, use:
 
@@ -123,7 +123,7 @@ To run several instances from the same folder, create one environment file for e
 make ENV_FILE=.env.RTX3050-math build up logs
 ```
 
-Each instance keeps its own database in `cache/<PROJECT_NAME>/`.
+All volumes live in `DATA_DIR` (default `./cache`), each instance keeps its own database in `DATA_DIR/<PROJECT_NAME>/`.
 
 ## 💬 Usage
 
