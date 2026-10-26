@@ -39,7 +39,6 @@ MASTER_EMAIL = os.getenv("MASTER_EMAIL", "")
 MASTER_TOKEN = os.getenv("MASTER_TOKEN", "")
 
 # Paths
-INDEX_PATH = "vector_db/faiss_index.bin"
 DB_PATH = os.getenv("DB_PATH", "/data/db.sqlite")
 GPT_SERVICE = os.getenv("GPT_SERVICE", "gpt-cpu")
 # llama-server tokenizer, served next to the OpenAI-compatible /v1 API
